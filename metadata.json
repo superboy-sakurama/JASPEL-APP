@@ -1,0 +1,6 @@
+{
+  "name": "Jaspel Zero Data Entry",
+  "description": "Sistem otomasi perhitungan Jasa Pelayanan (Jaspel) kesehatan terintegrasi Google Sheets API dengan algoritma balancing Largest Remainder Method.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
