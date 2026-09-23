@@ -280,3 +280,33 @@ export const savePeriodeKapitasiToSheets = async (setup: KapitasiSetup) => {
 
   return await appendSheetData(`${SHEET_NAMES.PERIODE_KAPITASI}!A:E`, values);
 };
+
+/**
+ * Mengambil riwayat periode dan hasil perhitungan jaspel dari Google Sheets
+ */
+export const getHistoricalJaspelFromSheets = async () => {
+  const [periodeRows, hasilRows] = await Promise.all([
+    getSheetData(`${SHEET_NAMES.PERIODE_KAPITASI}!A2:E`).catch(() => []),
+    getSheetData(`${SHEET_NAMES.HASIL_PERHITUNGAN}!A2:H`).catch(() => []),
+  ]);
+
+  return {
+    periode: (periodeRows || []).map((row) => ({
+      bulan: row[0] || '',
+      tahun: Number(row[1]) || 2026,
+      totalKapitasi: Number(row[2]) || 0,
+      totalAlokasi: Number(row[3]) || 0,
+      tanggalHitung: row[4] || '',
+    })),
+    hasil: (hasilRows || []).map((row) => ({
+      bulan: row[0] || '',
+      tahun: Number(row[1]) || 2026,
+      nama: row[2] || '',
+      bruto: Number(row[3]) || 0,
+      pajak: Number(row[4]) || 0,
+      fpk1: Number(row[5]) || 0,
+      fpk4: Number(row[6]) || 0,
+      netto: Number(row[7]) || 0,
+    })),
+  };
+};

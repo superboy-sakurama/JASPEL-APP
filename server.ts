@@ -8,6 +8,7 @@ import {
   initializeSpreadsheetTabs,
   saveHasilPerhitunganToSheets,
   savePeriodeKapitasiToSheets,
+  getHistoricalJaspelFromSheets,
   getSheetData,
   appendSheetData,
   SHEET_NAMES,
@@ -72,6 +73,11 @@ async function startServer() {
         const range = (req.query.range as string) || 'Master_Karyawan!A:K';
         const rows = await getSheetData(range);
         return res.json({ success: true, values: rows });
+      }
+
+      if (action === 'get-history') {
+        const historyData = await getHistoricalJaspelFromSheets();
+        return res.json({ success: true, data: historyData });
       }
 
       res.status(400).json({ error: 'Action parameter tidak dikenali' });

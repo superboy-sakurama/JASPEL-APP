@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Printer,
   ShieldAlert,
-  HelpCircle
+  HelpCircle,
+  Receipt
 } from 'lucide-react';
 
 interface JaspelTableProps {
@@ -18,6 +19,7 @@ interface JaspelTableProps {
   setup: KapitasiSetup;
   onOpenSlip: (employee: CalculatedEmployee) => void;
   onPushToGoogleSheets?: () => Promise<void>;
+  onOpenKwitansi?: () => void;
   isSyncingToSheets?: boolean;
 }
 
@@ -26,6 +28,7 @@ export const JaspelTable: React.FC<JaspelTableProps> = ({
   setup,
   onOpenSlip,
   onPushToGoogleSheets,
+  onOpenKwitansi,
   isSyncingToSheets = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -205,6 +208,16 @@ export const JaspelTable: React.FC<JaspelTableProps> = ({
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-2 shrink-0">
+            {onOpenKwitansi && (
+              <button
+                onClick={onOpenKwitansi}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 transition-colors"
+              >
+                <Receipt className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Kwitansi Global (Tanda Tangan)</span>
+              </button>
+            )}
+
             <button
               onClick={handleExportCSV}
               className="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 transition-colors"

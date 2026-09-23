@@ -126,3 +126,44 @@ export function generateSampleAttendanceCSV(employees: Employee[], bulan: string
     ...rows.map(r => r.map(c => `"${c}"`).join(',')),
   ].join('\r\n');
 }
+
+/**
+ * Konversi angka nominal ke teks Terbilang resmi Bahasa Indonesia
+ * Contoh: 93153035 -> "Sembilan Puluh Tiga Juta Seratus Lima Puluh Tiga Ribu Tiga Puluh Lima Rupiah"
+ */
+export function terbilang(nominal: number): string {
+  const bilangan = [
+    '', 'Satu', 'Dua', 'Tiga', 'Empat', 'Lima', 
+    'Enam', 'Tujuh', 'Delapan', 'Sembilan', 'Sepuluh', 'Sebelas'
+  ];
+
+  const n = Math.abs(Math.round(nominal));
+  if (n === 0) return 'Nol Rupiah';
+
+  function sebut(x: number): string {
+    if (x < 12) {
+      return bilangan[x];
+    } else if (x < 20) {
+      return sebut(x - 10) + ' Belas';
+    } else if (x < 100) {
+      return sebut(Math.floor(x / 10)) + ' Puluh ' + sebut(x % 10);
+    } else if (x < 200) {
+      return 'Seratus ' + sebut(x - 100);
+    } else if (x < 1000) {
+      return sebut(Math.floor(x / 100)) + ' Ratus ' + sebut(x % 100);
+    } else if (x < 2000) {
+      return 'Seribu ' + sebut(x - 1000);
+    } else if (x < 1000000) {
+      return sebut(Math.floor(x / 1000)) + ' Ribu ' + sebut(x % 1000);
+    } else if (x < 1000000000) {
+      return sebut(Math.floor(x / 1000000)) + ' Juta ' + sebut(x % 1000000);
+    } else if (x < 1000000000000) {
+      return sebut(Math.floor(x / 1000000000)) + ' Miliar ' + sebut(x % 1000000000);
+    } else {
+      return sebut(Math.floor(x / 1000000000000)) + ' Triliun ' + sebut(x % 1000000000000);
+    }
+  }
+
+  const raw = sebut(n).replace(/\s+/g, ' ').trim();
+  return `${raw} Rupiah`;
+}

@@ -8,13 +8,17 @@ import {
   Cloud, 
   Code, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  Receipt,
+  History
 } from 'lucide-react';
 import { GoogleSheetsConfig } from '../../types/jaspel';
 
+export type AppTab = 'reports' | 'kwitansi' | 'history' | 'employees' | 'attendance' | 'setup' | 'vercel' | 'code';
+
 interface HeaderProps {
-  activeTab: 'reports' | 'employees' | 'attendance' | 'setup' | 'vercel' | 'code';
-  setActiveTab: (tab: 'reports' | 'employees' | 'attendance' | 'setup' | 'vercel' | 'code') => void;
+  activeTab: AppTab;
+  setActiveTab: (tab: AppTab) => void;
   sheetsConfig: GoogleSheetsConfig;
   onOpenSheetsModal: () => void;
 }
@@ -83,6 +87,30 @@ export const Header: React.FC<HeaderProps> = ({
           >
             <FileText className="w-4 h-4" />
             <span>Hasil & Balancing Jaspel</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('kwitansi')}
+            className={`flex items-center space-x-2 py-3 px-3.5 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === 'kwitansi'
+                ? 'border-slate-800 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <Receipt className="w-4 h-4 text-emerald-600" />
+            <span>Kwitansi Global (Tanda Tangan)</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex items-center space-x-2 py-3 px-3.5 border-b-2 text-xs sm:text-sm font-medium whitespace-nowrap transition-colors ${
+              activeTab === 'history'
+                ? 'border-slate-800 text-slate-900 font-semibold'
+                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+            }`}
+          >
+            <History className="w-4 h-4 text-indigo-600" />
+            <span>History Bulan Sebelumnya</span>
           </button>
 
           <button

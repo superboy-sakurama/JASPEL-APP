@@ -82,3 +82,40 @@ export interface AttendanceImportRow {
   bulan?: string;
   tahun?: number;
 }
+
+export interface KwitansiPejabat {
+  namaFaskes: string;
+  kpaTitle: string;
+  kpaNama: string;
+  kpaNip: string;
+  kpaJabatan: string;
+  pptkNama: string;
+  pptkNip: string;
+  pptkJabatan: string;
+  bendaharaNama: string;
+  bendaharaNip: string;
+  bendaharaJabatan: string;
+  lunasTgl: string;
+}
+
+export interface JaspelHistoryRecord {
+  id: string; // e.g. "2026-08"
+  bulan: string;
+  tahun: number;
+  totalKapitasi: number;
+  alokasiPersen: number;
+  totalAlokasi: number;
+  tanggalHitung: string;
+  maxAttendance: number;
+  totalPenerima: number;
+  totalBruto: number;
+  totalTax: number;
+  totalTax15: number;
+  totalTax5: number;
+  totalFpk1: number;
+  totalFpk4: number;
+  totalNetto: number;
+  calculation: CalculationResult;
+  pejabat?: KwitansiPejabat;
+  savedAt: string;
+}

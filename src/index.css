@@ -9,19 +9,41 @@
 }
 
 @media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm 8mm 10mm 8mm;
+  }
+
   body {
     background-color: white !important;
     color: black !important;
+    font-size: 10pt !important;
   }
-  header, nav, button, .no-print {
+
+  header, nav, button, footer, .no-print {
     display: none !important;
   }
-  #printable-slip {
+
+  #printable-slip, #kwitansi-print-area {
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
     width: 100% !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  th, td {
+    border: 1px solid black !important;
+  }
+
+  .break-inside-avoid {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
   }
 }
 
