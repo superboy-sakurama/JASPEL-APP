@@ -92,7 +92,7 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
-              Menu 3 Alokasi Jaspel
+              Alokasi Jasa Pelayanan
             </span>
             <span className="text-xs text-slate-500 font-mono">
               Periode {setup.bulan} {setup.tahun}

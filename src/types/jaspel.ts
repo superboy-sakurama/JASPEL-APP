@@ -4,6 +4,7 @@
 
 export type EmployeeStatus = 'PNS' | 'PPPK' | 'Honorer';
 export type PendidikanLevel = 'SD' | 'SMP' | 'SMA' | 'D3' | 'D4/S1' | 'Profesi';
+export type KinerjaRating = 'Sangat Baik' | 'Baik' | 'Cukup' | 'Kurang' | 'Sangat Kurang';
 
 export interface Employee {
   id: string;
@@ -12,21 +13,36 @@ export interface Employee {
   tmt: string; // Tanggal Mulai Tugas (YYYY-MM-DD)
   status: EmployeeStatus; // PNS, PPPK, Honorer
   jenisAsn?: string;
-  pendidikan: string; // e.g. "Profesi Ners", "D3 Kebidanan", "D4/S1", "SD", etc.
+  pendidikan: string; // e.g. "S1", "D4", "D3", "Profesi Ners", dll.
   pendidikanStandard?: PendidikanLevel;
   jabatan: string; // e.g. "Dokter Umum", "Perawat", "Bidan", dll.
-  tugasAdmin?: string; // Tugas administrasi / jabatan tambahan (e.g. "Kepala Puskesmas", "Bendahara", "PPTK", "-")
+  tugasAdmin?: string; // e.g. "Kapus", "KTU", "PPTK", "Bendahara Pengeluaran", "-"
+  poinRangkapTugasCustom?: number;
+
+  // Tanggung Jawab Program (Detail pemegang program)
+  pjProgramName?: string;
+  pjProgramPoin?: number;
   program1?: string;
+  program1Poin?: number;
   program2?: string;
+  program2Poin?: number;
   program3?: string;
+  program3Poin?: number;
   program4?: string;
+  program4Poin?: number;
   program5?: string;
+  program5Poin?: number;
+
+  // Kinerja
+  kinerjaUraian?: KinerjaRating;
+  kinerjaNilai?: number; // e.g. 97.5
+
   npwp?: string;
   points: number; // Poin SK / Permenkes (atau hasil hitung otomatis)
   poinBpjs?: number; // Poin tanpa kehadiran (untuk PFK BPJS)
   prosentaseMasaKerja?: number; // % masa kerja terhitung (Honorer)
   attendance: number; // Jumlah kehadiran aktual bulan berjalan
-  maxAttendance: number; // Hari kerja maksimal sebulan (default 22 hari)
+  maxAttendance: number; // Hari kerja maksimal sebulan (default 24 hari sesuai Excel)
   taxRate: number; // Tarif PPh 21 (0.15 = 15%, 0.05 = 5%, 0 = 0%)
 }
 
@@ -36,7 +52,7 @@ export interface KapitasiSetup {
   totalKapitasi: number;
   alokasiPersen: number; // Default 60%
   totalAlokasi: number; // totalKapitasi * (alokasiPersen / 100)
-  maxAttendance: number; // Hari kerja standar sebulan (default 22)
+  maxAttendance: number; // Hari kerja standar sebulan (default 24)
   tanggalHitung: string;
 }
 
@@ -132,90 +148,173 @@ export interface KwitansiPejabat {
   jabatanPejabatKeuangan?: string;
 }
 
-// 1c. Data Poin Jaspel (Matriks Penilaian)
+export interface CustomPoinItem {
+  id: string;
+  nama: string;
+  poin: number;
+  keterangan?: string;
+}
+
+// 1c. Data Poin Jaspel (Sesuai Sheet POIN DASAR Excel AJP)
 export interface PoinJaspelConfig {
-  // 1. Status Kepegawaian
-  statusPns: number;
-  statusPppk: number;
-  statusHonorer: number;
+  // 1. Jenis Ketenagaan Berdasarkan Ijazah
+  ijazahDokter: number;
+  ijazahDokterGigi: number;
+  ijazahNersSstBd: number;
+  ijazahApoteker: number;
+  ijazahS1KesDiv: number;
+  ijazahS1NonKes: number;
+  ijazahD3Kes: number;
+  ijazahD3NonKes: number;
+  ijazahAsistenKes: number;
+  ijazahDibawahD3NonKes: number;
 
-  // 2. Jenis Ketenagaan
-  tenagaDokterUmum: number;
-  tenagaDokterGigi: number;
-  tenagaPerawat: number;
-  tenagaBidan: number;
-  tenagaApoteker: number;
-  tenagaAsistenApoteker: number;
-  tenagaPranataLab: number;
-  tenagaAdminUmum: number;
-
-  // 3. Jenis Pendidikan
-  pendidikanSd: number;
-  pendidikanSmp: number;
-  pendidikanSma: number;
-  pendidikanD3: number;
-  pendidikanD4S1: number;
-  pendidikanProfesi: number;
-
-  // 4. Tugas Administrasi Tambahan
-  tugasKepalaPuskesmas: number;
-  tugasKaSubbagTu: number;
-  tugasBendahara: number;
+  // 2. Rangkap Tugas Administrasi
+  tugasKapus: number;
+  tugasKtuBesertaTim: number;
   tugasPptk: number;
-  tugasPjPokja: number;
-  tugasLainnya: number;
+  tugasBendaharaPengeluaran: number;
+  tugasBendaharaPenerimaanKasir: number;
+  tugasAkuntansi: number;
+  tugasPengurusBarang: number;
+  tugasPphp: number;
+  tugasTimJkn: number;
+  tugasTimBokJampersal: number;
+  tugasRjgRig: number;
+  tugasTimPokja: number;
+  tugasPjPustuPolindes: number;
+  tugasTimMutu: number;
+  tugasTimSpi: number;
+  // Tugas Administrasi Tambahan (Fitur Tambah Poin Tugas)
+  customTugasList?: CustomPoinItem[];
 
-  // 5. PJ Program
-  pjProgram1: number;
-  pjProgram2: number;
-  pjProgram3: number;
-  pjProgram4: number;
-  pjProgram5: number;
+  // 3. Program dan Pelayanan
+  progPromkes: number;
+  progKesling: number;
+  progKia: number;
+  progKb: number;
+  progGizi: number;
+  progUks: number;
+  progDiare: number;
+  progIspa: number;
+  progKusta: number;
+  progTb: number;
+  progDbd: number;
+  progHivPms: number;
+  progMalariaRabies: number;
+  progHepatitis: number;
+  progImunisasi: number;
+  progTimProlanis: number;
+  progSurveilance: number;
+  progPtm: number;
+  progPerkesmasPisPk: number;
+  progKeswa: number;
+  progGilut: number;
+  progHatra: number;
+  progKesorga: number;
+  progIndra: number;
+  progKesKerja: number;
+  // Program Tambahan Baru (Fitur Tambah Poin Program)
+  customProgramList?: CustomPoinItem[];
+  poinPjProgramStandar?: number;
+  poinProg1Standar?: number;
+  poinProg2Standar?: number;
+  poinProg3Standar?: number;
+  poinProg4Standar?: number;
+  poinProg5Standar?: number;
+
+  // 4. Status Kepegawaian
+  statusAsn: number;
+  statusNonAsn: number;
+  statusPns?: number;
+  statusPppk?: number;
+  statusHonorer?: number;
+
+  // 5. Variabel Kinerja
+  kinerjaSangatBaik: number;
+  kinerjaBaik: number;
+  kinerjaCukup: number;
+  kinerjaKurang: number;
+  kinerjaSangatKurang: number;
 }
 
 // 1d. Prosentase Masa Kerja (Honorer / Non-ASN)
 export interface MasaKerjaRule {
   id: string;
   minBulan: number;
-  maxBulan: number; // e.g. 6, 12, 24, 36, or 99999 for > 36 bulan
+  maxBulan: number;
   label: string;
-  persentase: number; // 25, 50, 75, 90, 100
+  persentase: number;
 }
 
-// 2. Hitung Poin Aspect Row
+// 2. Hitung Poin Row (Exact match to Excel AJP Screenshot columns)
 export interface HitungPoinRow {
   id: string;
   no: number;
   nama: string;
-  nip: string;
   pendidikan: string;
-  status: EmployeeStatus;
-  jabatan: string;
-  tugasAdmin: string;
-  program1?: string;
-  program2?: string;
-  program3?: string;
-  program4?: string;
-  program5?: string;
   tmt: string;
-  lamaKerjaThn: number;
-  lamaKerjaBln: number;
-  prosentaseMasaKerja: number;
-  // Detail Poin
-  poinStatus: number;
+
+  // JML Masa Kerja
+  masaKerjaTh: number;
+  masaKerjaBln: number;
+  masaKerjaHari: number;
+
+  // Variabel Kehadiran
+  presensi: number;
+  hariKerja: number;
+  prosentaseKehadiran: number;
+
+  // Variabel Nilai
   poinKetenagaan: number;
-  poinPendidikan: number;
-  poinTugasAdmin: number;
-  poinProgram: number;
-  poinSubtotal: number;
-  // Poin tanpa kehadiran (PFK BPJS)
-  poinPfkBpjs: number;
-  // Kehadiran
-  kehadiran: number;
-  maxKehadiran: number;
-  rasioKehadiran: number;
-  // Poin Akhir Tertimbang
-  poinAkhir: number;
+  poinMasaKerja: number;
+  poinRangkapTugas: number;
+
+  // Tanggung Jawab Program (Detail pemegang program)
+  poinPjProg: number;
+  namaPjProg?: string;
+  poinProg1: number;
+  namaProg1?: string;
+  poinProg2: number;
+  namaProg2?: string;
+  poinProg3: number;
+  namaProg3?: string;
+  poinProg4?: number;
+  namaProg4?: string;
+  poinProg5?: number;
+  namaProg5?: string;
+  poinProgTambahanTotal: number;
+
+  // Status Kepegawaian
+  statusKepegawaian: EmployeeStatus;
+  statusNilai: number;
+
+  // Total Point
+  totalPoint: number;
+
+  // Poin Kehadiran = (Prosentase kehadiran x JML Poin) / 100
+  poinKehadiran: number;
+
+  // Variabel Kinerja
+  kinerjaUraian: string;
+  kinerjaNilai: number;
+
+  // Poin Kinerja = (Poin Kehadiran x Nilai Kinerja) / 100
+  poinKinerja: number;
+
+  // Variabel Masa Kerja (NON ASN)
+  masaKerjaBulan: number;
+  prosentaseMasaKerja: number;
+
+  // Exit Poin (Poin Final) = Poin Kinerja x (Prosentase Masa Kerja / 100)
+  exitPoin: number;
+
+  // Jasa Pelayanan (Rp.)
+  jasaPelayanan: number;
+
+  // Perhitungan PFK BPJS
+  totalPoinTanpaKehadiran: number; // TOTAL POINT x (Nilai Kinerja / 100) x (Prosentase Masa Kerja / 100)
+  pfkBpjs: number; // (totalPoinTanpaKehadiran / totalBasePoin) x totalAlokasi
 }
 
 export interface JaspelHistoryRecord {

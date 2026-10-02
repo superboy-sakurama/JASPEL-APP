@@ -91,7 +91,7 @@ export const ProsentaseMasaKerjaView: React.FC<ProsentaseMasaKerjaViewProps> = (
         <div>
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-              Menu 1.d Pengaturan
+              Pengaturan • Prosentase Masa Kerja
             </span>
           </div>
           <h2 className="text-lg font-bold text-slate-900 mt-1">

@@ -45,7 +45,7 @@ export const DataInstansiView: React.FC<DataInstansiViewProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              Menu 1.a Pengaturan
+              Pengaturan • Data Instansi
             </span>
           </div>
           <h2 className="text-lg font-bold text-slate-900 mt-1">

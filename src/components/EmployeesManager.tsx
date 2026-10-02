@@ -1,24 +1,25 @@
-import React, { useState, useRef } from 'react';
-import { Employee, EmployeeStatus } from '../types/jaspel';
+import React, { useState, useRef, useMemo } from 'react';
+import { Employee, EmployeeStatus, PoinJaspelConfig } from '../types/jaspel';
 import { downloadMasterPegawaiTemplate, parseExcelOrCsvFile } from '../lib/excelHelper';
+import { getAllAvailablePrograms, getAllAvailableTugas, DEFAULT_POIN_JASPEL, resolveProgramPoints } from '../lib/pointCalculator';
 import { 
   UserPlus, 
   Search, 
-  Download, 
   Upload, 
   Edit3, 
   Trash2, 
   Database, 
   CheckCircle2, 
-  AlertCircle,
-  FileSpreadsheet,
-  FileDown,
-  X,
-  Plus
+  AlertCircle, 
+  FileDown, 
+  X, 
+  Layers,
+  Info
 } from 'lucide-react';
 
 interface EmployeesManagerProps {
   employees: Employee[];
+  poinConfig?: PoinJaspelConfig;
   onAddEmployee: (emp: Employee) => void;
   onUpdateEmployee: (emp: Employee) => void;
   onDeleteEmployee: (id: string) => void;
@@ -29,21 +30,10 @@ interface EmployeesManagerProps {
 
 const PENDIDIKAN_OPTIONS = ['SD', 'SMP', 'SMA', 'D3', 'D4/S1', 'Profesi'];
 const STATUS_OPTIONS: EmployeeStatus[] = ['PNS', 'PPPK', 'Honorer'];
-const TUGAS_ADMIN_OPTIONS = [
-  '-',
-  'Kepala Puskesmas',
-  'Ka Subbag TU',
-  'Bendahara',
-  'PPTK',
-  'PJ Pokja UKM',
-  'PJ Pokja UKP',
-  'PJ Pokja Admen',
-  'Koordinator UGD / Rawat Inap',
-  'Staf Pelaksana',
-];
 
 export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
   employees,
+  poinConfig,
   onAddEmployee,
   onUpdateEmployee,
   onDeleteEmployee,
@@ -60,6 +50,15 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [importStatus, setImportStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
+  // Available Program and Task Lists
+  const availablePrograms = useMemo(() => {
+    return getAllAvailablePrograms(poinConfig || DEFAULT_POIN_JASPEL);
+  }, [poinConfig]);
+
+  const availableTugas = useMemo(() => {
+    return getAllAvailableTugas(poinConfig || DEFAULT_POIN_JASPEL);
+  }, [poinConfig]);
+
   // Form State
   const [formData, setFormData] = useState<Partial<Employee>>({
     name: '',
@@ -69,6 +68,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
     pendidikan: 'D4/S1',
     jabatan: 'Perawat',
     tugasAdmin: '-',
+    pjProgramName: '',
     program1: '',
     program2: '',
     program3: '',
@@ -76,9 +76,11 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
     program5: '',
     points: 60,
     attendance: 22,
-    maxAttendance: 22,
+    maxAttendance: 24,
     taxRate: 0.05,
     npwp: '',
+    kinerjaUraian: 'Baik',
+    kinerjaNilai: 97.5,
   });
 
   const handleOpenAdd = () => {
@@ -91,16 +93,19 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
       pendidikan: 'D4/S1',
       jabatan: 'Staf Medis / Paramedis',
       tugasAdmin: '-',
-      program1: 'Pelayanan Pasien BPJS',
+      pjProgramName: '',
+      program1: '',
       program2: '',
       program3: '',
       program4: '',
       program5: '',
       points: 50,
-      attendance: 22,
-      maxAttendance: 22,
+      attendance: 20,
+      maxAttendance: 24,
       taxRate: 0.05,
       npwp: '',
+      kinerjaUraian: 'Baik',
+      kinerjaNilai: 97.5,
     });
     setIsModalOpen(true);
   };
@@ -113,16 +118,15 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name) return;
 
     if (editingEmployee) {
       onUpdateEmployee({
         ...editingEmployee,
         ...formData,
         points: Number(formData.points) || 10,
-        attendance: Number(formData.attendance) || 22,
-        maxAttendance: Number(formData.maxAttendance) || 22,
-        taxRate: Number(formData.taxRate) || 0,
+        attendance: Number(editingEmployee.attendance ?? 0),
+        maxAttendance: Number(editingEmployee.maxAttendance || 24),
+        taxRate: Number(formData.taxRate) || (formData.status === 'Honorer' ? 0 : 0.05),
       } as Employee);
     } else {
       const newEmp: Employee = {
@@ -134,6 +138,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
         pendidikan: formData.pendidikan || 'D4/S1',
         jabatan: formData.jabatan || 'Staf',
         tugasAdmin: formData.tugasAdmin || '-',
+        pjProgramName: formData.pjProgramName || '',
         program1: formData.program1 || '',
         program2: formData.program2 || '',
         program3: formData.program3 || '',
@@ -141,9 +146,11 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
         program5: formData.program5 || '',
         npwp: formData.npwp || '',
         points: Number(formData.points) || 50,
-        attendance: Number(formData.attendance) || 22,
-        maxAttendance: Number(formData.maxAttendance) || 22,
+        attendance: 0,
+        maxAttendance: 24,
         taxRate: Number(formData.taxRate) || (formData.status === 'Honorer' ? 0 : 0.05),
+        kinerjaUraian: formData.kinerjaUraian || 'Baik',
+        kinerjaNilai: formData.kinerjaNilai || 97.5,
       };
       onAddEmployee(newEmp);
     }
@@ -163,7 +170,6 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
         return;
       }
 
-      // Deteksi indeks kolom dari header baris pertama
       const headers = rows[0].map((h: any) => String(h || '').toLowerCase().trim());
       const findIdx = (keywords: string[]) => {
         return headers.findIndex((h: string) => keywords.some((k) => h.includes(k)));
@@ -176,14 +182,15 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
       const pendIdx = findIdx(['pendidikan']);
       const jabIdx = findIdx(['jabatan', 'profesi']);
       const tugasIdx = findIdx(['tugas', 'administrasi']);
+      const pjIdx = findIdx(['pj program', 'pj prog', 'utama', 'pj']);
       const p1Idx = findIdx(['program 1', 'program1', 'p1']);
-      const p2Idx = findIdx(['program 2', 'program2', 'p2']);
-      const p3Idx = findIdx(['program 3', 'program3', 'p3']);
-      const p4Idx = findIdx(['program 4', 'program4', 'p4']);
-      const p5Idx = findIdx(['program 5', 'program5', 'p5']);
+      const p2Idx = findIdx(['tambahan 1', 'program 2', 'program2', 'p2']);
+      const p3Idx = findIdx(['tambahan 2', 'program 3', 'program3', 'p3']);
+      const p4Idx = findIdx(['tambahan 3', 'program 4', 'program4', 'p4']);
+      const p5Idx = findIdx(['tambahan 4', 'program 5', 'program5', 'p5']);
       const poinIdx = findIdx(['poin', 'point']);
-      const hadirIdx = findIdx(['kehadiran', 'hadir']);
-      const maxHadirIdx = findIdx(['maksimal', 'max']);
+      const hadirIdx = findIdx(['kehadiran', 'hadir', 'presensi']);
+      const maxHadirIdx = findIdx(['maksimal', 'max', 'hari kerja']);
 
       if (nameIdx === -1) {
         setImportStatus({ message: 'Kolom "Nama Pegawai" tidak ditemukan pada file.', type: 'error' });
@@ -214,19 +221,31 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
         const pend = pendIdx !== -1 && row[pendIdx] ? String(row[pendIdx]).trim() : 'D4/S1';
         const jab = jabIdx !== -1 && row[jabIdx] ? String(row[jabIdx]).trim() : 'Staf Medis';
         const tugas = tugasIdx !== -1 && row[tugasIdx] ? String(row[tugasIdx]).trim() : '-';
+        const pj = pjIdx !== -1 ? String(row[pjIdx] || '').trim() : '';
         const p1 = p1Idx !== -1 ? String(row[p1Idx] || '').trim() : '';
         const p2 = p2Idx !== -1 ? String(row[p2Idx] || '').trim() : '';
         const p3 = p3Idx !== -1 ? String(row[p3Idx] || '').trim() : '';
         const p4 = p4Idx !== -1 ? String(row[p4Idx] || '').trim() : '';
         const p5 = p5Idx !== -1 ? String(row[p5Idx] || '').trim() : '';
         const points = poinIdx !== -1 && row[poinIdx] ? Number(row[poinIdx]) : 50;
-        const attendance = hadirIdx !== -1 && row[hadirIdx] ? Number(row[hadirIdx]) : 22;
-        const maxAttendance = maxHadirIdx !== -1 && row[maxHadirIdx] ? Number(row[maxHadirIdx]) : 22;
+        
+        // Cek jika pegawai sudah ada di sistem, pertahankan data absensi berjalannya
+        const existingEmp = employees.find((e) => 
+          (nip !== '-' && e.nip.replace(/[^0-9]/g, '') === nip.replace(/[^0-9]/g, '')) ||
+          e.name.toLowerCase().trim() === name.toLowerCase().trim()
+        );
+
+        const attendance = hadirIdx !== -1 && row[hadirIdx] !== undefined && row[hadirIdx] !== '' 
+          ? Number(row[hadirIdx]) 
+          : (existingEmp?.attendance ?? 0);
+        const maxAttendance = maxHadirIdx !== -1 && row[maxHadirIdx] !== undefined && row[maxHadirIdx] !== '' 
+          ? Number(row[maxHadirIdx]) 
+          : (existingEmp?.maxAttendance || 24);
 
         const taxRate = statusStr === 'Honorer' ? 0 : 0.05;
 
         importedEmployees.push({
-          id: `emp-imp-${Date.now()}-${i}`,
+          id: existingEmp ? existingEmp.id : `emp-imp-${Date.now()}-${i}`,
           name,
           nip,
           status: statusStr,
@@ -234,15 +253,18 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
           pendidikan: pend,
           jabatan: jab,
           tugasAdmin: tugas,
+          pjProgramName: pj,
           program1: p1,
           program2: p2,
           program3: p3,
           program4: p4,
           program5: p5,
-          points: isNaN(points) ? 50 : points,
-          attendance: isNaN(attendance) ? 22 : attendance,
-          maxAttendance: isNaN(maxAttendance) ? 22 : maxAttendance,
+          points: isNaN(points) ? (existingEmp?.points ?? 50) : points,
+          attendance: isNaN(attendance) ? 0 : attendance,
+          maxAttendance: isNaN(maxAttendance) ? 24 : maxAttendance,
           taxRate,
+          kinerjaUraian: existingEmp?.kinerjaUraian || 'Baik',
+          kinerjaNilai: existingEmp?.kinerjaNilai || 97.5,
         });
       }
 
@@ -258,45 +280,70 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
       }
 
       setImportStatus({
-        message: `Berhasil mengimpor ${importedEmployees.length} pegawai ke Master Data!`,
+        message: `Berhasil mengimpor ${importedEmployees.length} data pegawai ke dalam Master Karyawan!`,
         type: 'success',
       });
-      setTimeout(() => setImportStatus(null), 5000);
     } catch (err: any) {
-      setImportStatus({ message: `Gagal membaca file Excel: ${err.message}`, type: 'error' });
+      setImportStatus({
+        message: `Gagal memproses file Excel: ${err?.message || 'Format tidak didukung'}`,
+        type: 'error',
+      });
     } finally {
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  // Filtered list
+  // Filtered employees
   const filteredEmployees = employees.filter((emp) => {
-    const matchesSearch =
+    const matchSearch =
       emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.nip.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.jabatan.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'ALL' || emp.status === statusFilter;
-    return matchesSearch && matchesStatus;
+      emp.nip.includes(searchTerm) ||
+      (emp.jabatan && emp.jabatan.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (emp.tugasAdmin && emp.tugasAdmin.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (emp.pjProgramName && emp.pjProgramName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (emp.program1 && emp.program1.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    const matchStatus = statusFilter === 'ALL' || emp.status === statusFilter;
+    return matchSearch && matchStatus;
   });
 
   return (
     <div className="space-y-6">
+      {/* Autocomplete Datalist for Programs and Administrative Tasks */}
+      <datalist id="program-options-list">
+        {availablePrograms.map((prog) => (
+          <option key={prog.nama} value={prog.nama}>
+            {prog.nama} ({prog.poin} Poin{prog.isCustom ? ' • Custom' : ''})
+          </option>
+        ))}
+      </datalist>
+
+      <datalist id="tugas-options-list">
+        {availableTugas.map((t) => (
+          <option key={t.nama} value={t.nama}>
+            {t.nama} ({t.poin} Poin{t.isCustom ? ' • Custom' : ''})
+          </option>
+        ))}
+      </datalist>
+
       {/* Top Banner */}
       <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center space-x-2">
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-              Menu 1.b Pengaturan
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-50 text-indigo-800 border border-indigo-200">
+              Pengaturan • Data Pegawai
             </span>
             <span className="text-xs text-slate-500 font-mono">
-              Total {employees.length} Karyawan
+              Total {employees.length} Pegawai
             </span>
           </div>
           <h2 className="text-lg font-bold text-slate-900 mt-1">
             Data Pegawai (Master Karyawan)
           </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Kelola master data pegawai: NIP/NIK, Status Kepegawaian (PNS, PPPK, Honorer), TMT, Pendidikan, Jabatan, Tugas Administrasi, Program 1-5, dan Poin.
+            Daftar seluruh personil, NIP, status kepegawaian, TMT masa kerja, kualifikasi ijazah, tugas administrasi, dan penugasan tanggung jawab program (PJ Program & Tambahan 1 s/d 4).
           </p>
         </div>
 
@@ -373,10 +420,10 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari nama, NIP, atau jabatan..."
+            placeholder="Cari nama, NIP, jabatan, atau program..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-slate-800"
+            className="w-full pl-9 pr-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-hidden focus:ring-1 focus:ring-slate-800"
           />
         </div>
 
@@ -392,7 +439,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
               }`}
             >
-              {st === 'ALL' ? 'Semua' : st}
+              {st === 'ALL' ? 'Semua' : st === 'Honorer' ? 'NON ASN' : st}
             </button>
           ))}
         </div>
@@ -410,17 +457,21 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                 <th className="px-4 py-3 text-center">TMT</th>
                 <th className="px-4 py-3 text-center">Pendidikan</th>
                 <th className="px-4 py-3">Jabatan & Tugas Admin</th>
-                <th className="px-4 py-3">Program (1-5)</th>
-                <th className="px-4 py-3 text-center">Poin</th>
-                <th className="px-4 py-3 text-center">Kehadiran</th>
+                <th className="px-4 py-3 min-w-[220px]">Penugasan Program (PJ & Tambahan 1-4)</th>
+                <th className="px-4 py-3 text-center">Poin Dasar</th>
                 <th className="px-4 py-3 text-center w-20">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {filteredEmployees.map((emp, idx) => {
-                const programs = [emp.program1, emp.program2, emp.program3, emp.program4, emp.program5]
-                  .filter(Boolean)
-                  .join(', ');
+                const programPills = [
+                  emp.pjProgramName ? { label: `PJ: ${emp.pjProgramName}`, isPj: true } : null,
+                  emp.program1 ? { label: `P1: ${emp.program1}`, isP1: true } : null,
+                  emp.program2 ? { label: `Tambahan 1: ${emp.program2}` } : null,
+                  emp.program3 ? { label: `Tambahan 2: ${emp.program3}` } : null,
+                  emp.program4 ? { label: `Tambahan 3: ${emp.program4}` } : null,
+                  emp.program5 ? { label: `Tambahan 4: ${emp.program5}` } : null,
+                ].filter(Boolean);
 
                 return (
                   <tr key={emp.id} className="hover:bg-slate-50/70 transition-colors">
@@ -439,7 +490,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                             : 'bg-amber-100 text-amber-800'
                         }`}
                       >
-                        {emp.status}
+                        {emp.status === 'Honorer' ? 'NON ASN' : emp.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center font-mono text-slate-600 whitespace-nowrap">
@@ -451,37 +502,53 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="font-semibold text-slate-800">{emp.jabatan}</div>
+                      <div className="text-slate-800 font-medium">{emp.jabatan}</div>
                       {emp.tugasAdmin && emp.tugasAdmin !== '-' && (
-                        <div className="text-[10px] text-indigo-700 font-medium bg-indigo-50 px-1.5 py-0.5 rounded w-max mt-0.5">
-                          Tugas: {emp.tugasAdmin}
+                        <div className="text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded inline-block mt-0.5">
+                          {emp.tugasAdmin}
                         </div>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-slate-600 max-w-[200px] truncate" title={programs || '-'}>
-                      {programs || '-'}
+                    <td className="px-4 py-3">
+                      {programPills.length === 0 ? (
+                        <span className="text-slate-400 text-[11px]">-</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {programPills.map((p: any, i) => (
+                            <span
+                              key={i}
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                p.isPj 
+                                  ? 'bg-teal-100 text-teal-900 border border-teal-300 font-semibold' 
+                                  : p.isP1
+                                  ? 'bg-sky-100 text-sky-900 border border-sky-300 font-medium'
+                                  : 'bg-slate-100 text-slate-700'
+                              }`}
+                            >
+                              {p.label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-center font-mono font-bold text-slate-800">
                       {emp.points}
-                    </td>
-                    <td className="px-4 py-3 text-center font-mono text-slate-600 whitespace-nowrap">
-                      {emp.attendance}/{emp.maxAttendance || 22}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center space-x-1">
                         <button
                           onClick={() => handleOpenEdit(emp)}
-                          className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
                           title="Edit Pegawai"
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
+                          <Edit3 className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => onDeleteEmployee(emp.id)}
                           className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                           title="Hapus Pegawai"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
@@ -493,10 +560,10 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
         </div>
       </div>
 
-      {/* Modal Add/Edit Employee */}
+      {/* Modal Add / Edit Pegawai */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center space-x-2">
                 <UserPlus className="w-5 h-5 text-indigo-600" />
@@ -504,13 +571,13 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
               </h3>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="space-y-4">
+            <form onSubmit={handleSave} className="space-y-4 mt-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -551,7 +618,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                   >
                     {STATUS_OPTIONS.map((st) => (
                       <option key={st} value={st}>
-                        {st}
+                        {st === 'Honorer' ? 'Honorer (NON ASN)' : st}
                       </option>
                     ))}
                   </select>
@@ -605,22 +672,19 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Tugas Administrasi
                   </label>
-                  <select
+                  <input
+                    type="text"
+                    list="tugas-options-list"
                     value={formData.tugasAdmin || '-'}
                     onChange={(e) => setFormData({ ...formData, tugasAdmin: e.target.value })}
+                    placeholder="Pilih atau ketik tugas administrasi..."
                     className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
-                  >
-                    {TUGAS_ADMIN_OPTIONS.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Jumlah Poin
+                    Jumlah Poin Dasar (Auto / Manual)
                   </label>
                   <input
                     type="number"
@@ -633,57 +697,163 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                 </div>
               </div>
 
-              {/* Program 1 s/d 5 */}
-              <div className="pt-2 border-t border-slate-100">
-                <span className="block text-xs font-bold text-slate-800 mb-2">
-                  Penugasan Program Kesehatan (PJ Program 1 s/d 5):
-                </span>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Program 1</label>
+              {/* Penugasan Tanggung Jawab Program (AJP) */}
+              <div className="pt-3 border-t border-slate-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <Layers className="w-4 h-4 text-teal-600" />
+                  <span className="text-xs font-bold text-slate-800">
+                    Penugasan Tanggung Jawab Program Kesehatan (AJP)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mb-3">
+                  Pilih program kesehatan puskesmas dari daftar yang telah diatur pada menu Data Poin Jaspel (atau ketik langsung nama program baru). Isian ini otomatis masuk ke kolom terkait pada lembar Hitung Poin:
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* PJ Program */}
+                  <div className="p-2.5 bg-teal-50/60 rounded-xl border border-teal-200">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-bold text-teal-950">
+                        PJ Program (Penanggung Jawab Utama)
+                      </label>
+                      {formData.pjProgramName && (
+                        <span className="text-[10px] font-mono font-bold text-teal-800 bg-teal-100 px-1.5 py-0.2 rounded">
+                          +{resolveProgramPoints(formData.pjProgramName, formData.pjProgramPoin, poinConfig)} Poin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-teal-700 font-medium block mb-1">
+                      → Masuk ke kolom <strong className="font-bold text-teal-900">PJ PROGRAM</strong> di Hitung Poin
+                    </span>
                     <input
                       type="text"
-                      placeholder="Contoh: Kesehatan Ibu & Anak (KIA)"
+                      list="program-options-list"
+                      placeholder="Contoh: Manajemen / KIA / Promkes"
+                      value={formData.pjProgramName || ''}
+                      onChange={(e) => setFormData({ ...formData, pjProgramName: e.target.value })}
+                      className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-teal-300 bg-white"
+                    />
+                  </div>
+
+                  {/* Program 1 */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-bold text-slate-800">
+                        Program 1 (Program Pokok / Wajib 1)
+                      </label>
+                      {formData.program1 && (
+                        <span className="text-[10px] font-mono font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                          +{resolveProgramPoints(formData.program1, formData.program1Poin, poinConfig)} Poin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">
+                      → Masuk ke kolom <strong className="font-bold text-slate-800">PROGRAM 1</strong> di Hitung Poin
+                    </span>
+                    <input
+                      type="text"
+                      list="program-options-list"
+                      placeholder="Contoh: Pelayanan Rawat Inap / Gizi"
                       value={formData.program1 || ''}
                       onChange={(e) => setFormData({ ...formData, program1: e.target.value })}
                       className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Program 2</label>
+
+                  {/* Tambahan 1 */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-bold text-slate-800">
+                        Tambahan 1 (Program Tambahan 1)
+                      </label>
+                      {formData.program2 && (
+                        <span className="text-[10px] font-mono font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                          +{resolveProgramPoints(formData.program2, formData.program2Poin, poinConfig)} Poin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">
+                      → Masuk ke kolom <strong className="font-bold text-slate-800">TAMBAHAN 1</strong> di Hitung Poin
+                    </span>
                     <input
                       type="text"
-                      placeholder="Contoh: Pelayanan KB"
+                      list="program-options-list"
+                      placeholder="Contoh: Imunisasi / PTM"
                       value={formData.program2 || ''}
                       onChange={(e) => setFormData({ ...formData, program2: e.target.value })}
                       className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Program 3</label>
+
+                  {/* Tambahan 2 */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-bold text-slate-800">
+                        Tambahan 2 (Program Tambahan 2)
+                      </label>
+                      {formData.program3 && (
+                        <span className="text-[10px] font-mono font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                          +{resolveProgramPoints(formData.program3, formData.program3Poin, poinConfig)} Poin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">
+                      → Masuk ke kolom <strong className="font-bold text-slate-800">TAMBAHAN 2</strong> di Hitung Poin
+                    </span>
                     <input
                       type="text"
-                      placeholder="Contoh: Posyandu Balita"
+                      list="program-options-list"
+                      placeholder="Contoh: TB / Diare / UKS"
                       value={formData.program3 || ''}
                       onChange={(e) => setFormData({ ...formData, program3: e.target.value })}
                       className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
                     />
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Program 4</label>
+
+                  {/* Tambahan 3 */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-bold text-slate-800">
+                        Tambahan 3 (Program Tambahan 3)
+                      </label>
+                      {formData.program4 && (
+                        <span className="text-[10px] font-mono font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                          +{resolveProgramPoints(formData.program4, formData.program4Poin, poinConfig)} Poin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">
+                      → Masuk ke kolom <strong className="font-bold text-slate-800">TAMBAHAN 3</strong> di Hitung Poin
+                    </span>
                     <input
                       type="text"
-                      placeholder="Contoh: Skrining PTM"
+                      list="program-options-list"
+                      placeholder="Contoh: Posyandu / Surveilance"
                       value={formData.program4 || ''}
                       onChange={(e) => setFormData({ ...formData, program4: e.target.value })}
                       className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
                     />
                   </div>
-                  <div className="sm:col-span-2">
-                    <label className="block text-[11px] font-medium text-slate-600 mb-0.5">Program 5</label>
+
+                  {/* Tambahan 4 */}
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <label className="text-[11px] font-bold text-slate-800">
+                        Tambahan 4 (Program Tambahan 4)
+                      </label>
+                      {formData.program5 && (
+                        <span className="text-[10px] font-mono font-bold text-teal-800 bg-teal-50 px-1.5 py-0.2 rounded border border-teal-200">
+                          +{resolveProgramPoints(formData.program5, formData.program5Poin, poinConfig)} Poin
+                        </span>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block mb-1">
+                      → Masuk ke kolom <strong className="font-bold text-slate-800">TAMBAHAN 4</strong> di Hitung Poin
+                    </span>
                     <input
                       type="text"
-                      placeholder="Contoh: Imunisasi Dasar Lengkap"
+                      list="program-options-list"
+                      placeholder="Contoh: Keswa / Gilut"
                       value={formData.program5 || ''}
                       onChange={(e) => setFormData({ ...formData, program5: e.target.value })}
                       className="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white"
@@ -692,31 +862,16 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                 </div>
               </div>
 
-              {/* Attendance & Tax */}
-              <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Hari Kehadiran (Bulan Ini)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    value={formData.attendance ?? 22}
-                    onChange={(e) => setFormData({ ...formData, attendance: Number(e.target.value) })}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Hari Maksimal Kerja
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    value={formData.maxAttendance ?? 22}
-                    onChange={(e) => setFormData({ ...formData, maxAttendance: Number(e.target.value) })}
-                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white"
-                  />
+              {/* Info Kehadiran Otomatis dari Absensi */}
+              <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl text-xs text-blue-900 flex items-start space-x-2.5">
+                <Info className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <span className="font-bold block text-blue-950">
+                    Data Kehadiran Otomatis dari Menu Import Absensi
+                  </span>
+                  <p className="text-[11px] text-blue-800 leading-relaxed">
+                    Hari hadir dan hari kerja pegawai tidak diinput pada formulir ini karena jumlahnya berbeda setiap bulan. Data kehadiran akan diambil secara otomatis dari menu <strong>Import Absensi</strong> dan langsung dimunculkan pada lembar <strong>Hitung Poin</strong>.
+                  </p>
                 </div>
               </div>
 
@@ -724,15 +879,15 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm"
+                  className="px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-sm transition-colors"
                 >
-                  {editingEmployee ? 'Simpan Perubahan' : 'Tambahkan Pegawai'}
+                  Simpan Pegawai
                 </button>
               </div>
             </form>

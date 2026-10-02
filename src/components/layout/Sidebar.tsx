@@ -15,11 +15,8 @@ import {
   Settings, 
   Cloud, 
   Code, 
-  CheckCircle2, 
-  AlertCircle,
   X,
-  HeartPulse,
-  ExternalLink
+  HeartPulse
 } from 'lucide-react';
 import { GoogleSheetsConfig, InstansiConfig } from '../../types/jaspel';
 
@@ -28,9 +25,9 @@ export type AppMenuId =
   | 'pengaturan-pegawai'
   | 'pengaturan-poin'
   | 'pengaturan-masa-kerja'
-  | 'hitung-poin'
   | 'alokasi'
   | 'absensi'
+  | 'hitung-poin'
   | 'balancing'
   | 'kwitansi'
   | 'history'
@@ -56,7 +53,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile = false,
   onCloseMobile,
 }) => {
-  // Pengaturan dropdown open by default if activeMenu is in pengaturan
   const isPengaturanActive = activeMenu.startsWith('pengaturan-');
   const [isPengaturanOpen, setIsPengaturanOpen] = useState(true);
 
@@ -110,9 +106,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
 
-        {/* Navigation List */}
+        {/* Navigation List: Exact Workflow Order without numbers */}
         <div className="flex-1 overflow-y-auto p-3 space-y-1.5 text-xs font-medium custom-scrollbar">
-          {/* MENU 1: PENGATURAN (Collapsible) */}
+          
+          {/* 1. PENGATURAN (Collapsible) */}
           <div className="space-y-1">
             <button
               type="button"
@@ -125,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2.5">
                 <Settings className={`w-4 h-4 ${isPengaturanActive ? 'text-indigo-400' : 'text-slate-400'}`} />
-                <span className="text-xs">1. Pengaturan</span>
+                <span className="text-xs">Pengaturan</span>
               </div>
               {isPengaturanOpen ? (
                 <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -136,7 +133,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {isPengaturanOpen && (
               <div className="pl-5 pr-1 py-1 space-y-1 border-l-2 border-slate-800 ml-4 my-1">
-                {/* 1.a Data Instansi */}
+                {/* Data Instansi & Pejabat */}
                 <button
                   type="button"
                   onClick={() => handleSelectMenu('pengaturan-instansi')}
@@ -147,10 +144,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Building2 className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">a. Data Instansi & Pejabat</span>
+                  <span className="truncate">Data Instansi & Pejabat</span>
                 </button>
 
-                {/* 1.b Data Pegawai */}
+                {/* Data Pegawai (Master) */}
                 <button
                   type="button"
                   onClick={() => handleSelectMenu('pengaturan-pegawai')}
@@ -161,10 +158,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Users className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">b. Data Pegawai (Master)</span>
+                  <span className="truncate">Data Pegawai (Master)</span>
                 </button>
 
-                {/* 1.c Data Poin Jaspel */}
+                {/* Data Poin Jaspel */}
                 <button
                   type="button"
                   onClick={() => handleSelectMenu('pengaturan-poin')}
@@ -175,10 +172,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Award className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">c. Data Poin Jaspel</span>
+                  <span className="truncate">Data Poin Jaspel</span>
                 </button>
 
-                {/* 1.d Prosentase Masa Kerja */}
+                {/* Prosentase Masa Kerja */}
                 <button
                   type="button"
                   onClick={() => handleSelectMenu('pengaturan-masa-kerja')}
@@ -189,34 +186,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   }`}
                 >
                   <Percent className="w-3.5 h-3.5 shrink-0" />
-                  <span className="truncate">d. Prosentase Masa Kerja</span>
+                  <span className="truncate">Prosentase Masa Kerja</span>
                 </button>
               </div>
             )}
           </div>
 
-          {/* MENU 2: HITUNG POIN */}
-          <button
-            type="button"
-            onClick={() => handleSelectMenu('hitung-poin')}
-            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
-              activeMenu === 'hitung-poin'
-                ? 'bg-emerald-600 text-white font-bold shadow-md'
-                : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
-            }`}
-          >
-            <div className="flex items-center space-x-2.5">
-              <Calculator className={`w-4 h-4 ${activeMenu === 'hitung-poin' ? 'text-white' : 'text-emerald-400'}`} />
-              <span>2. Hitung Poin</span>
-            </div>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-              activeMenu === 'hitung-poin' ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-800 text-emerald-400'
-            }`}>
-              PFK BPJS
-            </span>
-          </button>
-
-          {/* MENU 3: ALOKASI JASA PELAYANAN */}
+          {/* 2. ALOKASI JASA PELAYANAN */}
           <button
             type="button"
             onClick={() => handleSelectMenu('alokasi')}
@@ -228,7 +204,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Sliders className={`w-4 h-4 ${activeMenu === 'alokasi' ? 'text-white' : 'text-blue-400'}`} />
-              <span>3. Alokasi Jasa Pelayanan</span>
+              <span>Alokasi Jasa Pelayanan</span>
             </div>
             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
               activeMenu === 'alokasi' ? 'bg-blue-700 text-blue-100' : 'bg-slate-800 text-slate-400'
@@ -237,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </button>
 
-          {/* MENU 4: IMPORT ABSENSI */}
+          {/* 3. IMPORT ABSENSI */}
           <button
             type="button"
             onClick={() => handleSelectMenu('absensi')}
@@ -249,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <FileSpreadsheet className={`w-4 h-4 ${activeMenu === 'absensi' ? 'text-white' : 'text-cyan-400'}`} />
-              <span>4. Import Absensi</span>
+              <span>Import Absensi</span>
             </div>
             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
               activeMenu === 'absensi' ? 'bg-cyan-700 text-cyan-100' : 'bg-slate-800 text-slate-400'
@@ -258,7 +234,28 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </button>
 
-          {/* MENU 5: HASIL & BALANCING JASPEL */}
+          {/* 4. HITUNG POIN */}
+          <button
+            type="button"
+            onClick={() => handleSelectMenu('hitung-poin')}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+              activeMenu === 'hitung-poin'
+                ? 'bg-emerald-600 text-white font-bold shadow-md'
+                : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center space-x-2.5">
+              <Calculator className={`w-4 h-4 ${activeMenu === 'hitung-poin' ? 'text-white' : 'text-emerald-400'}`} />
+              <span>Hitung Poin</span>
+            </div>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
+              activeMenu === 'hitung-poin' ? 'bg-emerald-700 text-emerald-100' : 'bg-slate-800 text-emerald-400'
+            }`}>
+              PFK BPJS
+            </span>
+          </button>
+
+          {/* 5. HASIL & BALANCING JASPEL */}
           <button
             type="button"
             onClick={() => handleSelectMenu('balancing')}
@@ -270,7 +267,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Scale className={`w-4 h-4 ${activeMenu === 'balancing' ? 'text-white' : 'text-amber-400'}`} />
-              <span>5. Hasil & Balancing Jaspel</span>
+              <span>Hasil & Balancing Jaspel</span>
             </div>
             <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
               activeMenu === 'balancing' ? 'bg-amber-700 text-amber-100' : 'bg-slate-800 text-amber-400'
@@ -279,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </span>
           </button>
 
-          {/* MENU 6: KWITANSI GLOBAL */}
+          {/* 6. KWITANSI GLOBAL */}
           <button
             type="button"
             onClick={() => handleSelectMenu('kwitansi')}
@@ -291,11 +288,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <Receipt className={`w-4 h-4 ${activeMenu === 'kwitansi' ? 'text-white' : 'text-rose-400'}`} />
-              <span>6. Kwitansi Global (Tanda Tangan)</span>
+              <span>Kwitansi Global (Tanda Tangan)</span>
             </div>
           </button>
 
-          {/* MENU 7: HISTORY */}
+          {/* 7. HISTORY */}
           <button
             type="button"
             onClick={() => handleSelectMenu('history')}
@@ -307,7 +304,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <div className="flex items-center space-x-2.5">
               <History className={`w-4 h-4 ${activeMenu === 'history' ? 'text-white' : 'text-purple-400'}`} />
-              <span>7. History</span>
+              <span>History</span>
             </div>
           </button>
 
@@ -341,28 +338,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <Code className="w-3.5 h-3.5 text-sky-400" />
               <span>Struktur Next.js Code</span>
             </button>
-
-            {/* Vercel Guide */}
-            <button
-              type="button"
-              onClick={() => handleSelectMenu('vercel')}
-              className={`w-full flex items-center space-x-2 px-3 py-2 rounded-lg text-[11px] transition-colors ${
-                activeMenu === 'vercel' ? 'bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-              <span>Panduan Vercel Deploy</span>
-            </button>
           </div>
         </div>
 
-        {/* Sidebar Footer */}
-        <div className="p-3 border-t border-slate-800 text-[10px] text-slate-500 bg-slate-950/40">
-          <div className="flex items-center justify-between mb-0.5">
+        {/* Sidebar Footer Info */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/40 text-[10px] text-slate-400 space-y-1">
+          <div className="flex items-center justify-between">
             <span>Algoritma Penyeimbang:</span>
-            <span className="text-emerald-400 font-bold">Hare-Niemeyer</span>
+            <span className="font-semibold text-emerald-400">Hare-Niemeyer</span>
           </div>
-          <div>Regulasi: Permenkes No. 6 Tahun 2022</div>
+          <p className="text-[9px] text-slate-500">
+            Regulasi: Permenkes No. 6 Tahun 2022
+          </p>
         </div>
       </aside>
     </>

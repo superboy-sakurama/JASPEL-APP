@@ -216,8 +216,8 @@ export default function App() {
       const row = evaluateHitungPoinRow(emp, idx, poinConfig, masaKerjaRules);
       return {
         ...emp,
-        points: row.poinPfkBpjs,
-        poinBpjs: row.poinPfkBpjs,
+        points: row.exitPoin,
+        poinBpjs: row.totalPoinTanpaKehadiran,
         prosentaseMasaKerja: row.prosentaseMasaKerja,
       };
     });
@@ -520,10 +520,11 @@ export default function App() {
             />
           )}
 
-          {/* MENU 1.b: DATA PEGAWAI (MASTER KARYAWAN) */}
+          {/* MENU DATA PEGAWAI (MASTER KARYAWAN) */}
           {activeMenu === 'pengaturan-pegawai' && (
             <EmployeesManager
               employees={employees}
+              poinConfig={poinConfig}
               onAddEmployee={handleAddEmployee}
               onUpdateEmployee={handleUpdateEmployee}
               onDeleteEmployee={handleDeleteEmployee}
@@ -560,23 +561,7 @@ export default function App() {
             />
           )}
 
-          {/* MENU 2: HITUNG POIN */}
-          {activeMenu === 'hitung-poin' && (
-            <HitungPoinView
-              employees={employees}
-              poinConfig={poinConfig}
-              masaKerjaRules={masaKerjaRules}
-              instansi={instansi}
-              bulan={setup.bulan}
-              tahun={setup.tahun}
-              onApplyCalculatedPointsToMaster={(updated) => {
-                setEmployees(updated);
-                showToast('Nilai poin berhasil diterapkan ke Master Karyawan!', 'success');
-              }}
-            />
-          )}
-
-          {/* MENU 3: ALOKASI JASA PELAYANAN */}
+          {/* ALOKASI JASA PELAYANAN */}
           {activeMenu === 'alokasi' && (
             <KapitasiSetupView
               setup={setup}
@@ -608,7 +593,7 @@ export default function App() {
             />
           )}
 
-          {/* MENU 4: IMPORT ABSENSI */}
+          {/* IMPORT ABSENSI */}
           {activeMenu === 'absensi' && (
             <ImportCSV
               employees={employees}
@@ -619,7 +604,24 @@ export default function App() {
             />
           )}
 
-          {/* MENU 5: HASIL & BALANCING JASPEL */}
+          {/* HITUNG POIN */}
+          {activeMenu === 'hitung-poin' && (
+            <HitungPoinView
+              employees={employees}
+              poinConfig={poinConfig}
+              masaKerjaRules={masaKerjaRules}
+              instansi={instansi}
+              bulan={setup.bulan}
+              tahun={setup.tahun}
+              totalAlokasiKapitasi={setup.totalAlokasi}
+              onApplyCalculatedPointsToMaster={(updated) => {
+                setEmployees(updated);
+                showToast('Nilai poin berhasil diterapkan ke Master Karyawan!', 'success');
+              }}
+            />
+          )}
+
+          {/* HASIL & BALANCING JASPEL */}
           {activeMenu === 'balancing' && (
             <JaspelTable
               calculation={calculation}
@@ -637,7 +639,7 @@ export default function App() {
             />
           )}
 
-          {/* MENU 6: KWITANSI GLOBAL */}
+          {/* KWITANSI GLOBAL */}
           {activeMenu === 'kwitansi' && (
             <KwitansiGlobalView
               employees={kwitansiData.employees}
@@ -658,7 +660,7 @@ export default function App() {
             />
           )}
 
-          {/* MENU 7: HISTORY */}
+          {/* HISTORY */}
           {activeMenu === 'history' && (
             <HistoryJaspelView
               historyRecords={historyRecords}

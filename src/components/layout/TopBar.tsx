@@ -34,63 +34,63 @@ export const TopBar: React.FC<TopBarProps> = ({
     switch (activeMenu) {
       case 'pengaturan-instansi':
         return {
-          title: '1.a Data Instansi & Pejabat',
+          title: 'Data Instansi & Pejabat',
           subtitle: 'Pengaturan identitas puskesmas/klinik dan pejabat penandatangan kwitansi',
           tag: 'Pengaturan',
         };
       case 'pengaturan-pegawai':
         return {
-          title: '1.b Data Pegawai (Master Karyawan)',
-          subtitle: 'Master data NIP, status kepegawaian, jabatan, tugas tambahan, dan program',
-          tag: 'Master Data',
+          title: 'Data Pegawai (Master Karyawan)',
+          subtitle: 'Master data NIP, status kepegawaian, jabatan, tugas tambahan, dan pemegang program',
+          tag: 'Pengaturan',
         };
       case 'pengaturan-poin':
         return {
-          title: '1.c Data Poin Jaspel',
-          subtitle: 'Konfigurasi bobot poin variabel penilaian status, ketenagaan, dan pendidikan',
-          tag: 'Poin Jaspel',
+          title: 'Data Poin Jaspel',
+          subtitle: 'Konfigurasi bobot poin penilaian status, ketenagaan, tugas administrasi, dan program pelayanan',
+          tag: 'Pengaturan',
         };
       case 'pengaturan-masa-kerja':
         return {
-          title: '1.d Prosentase Masa Kerja Honorer',
+          title: 'Prosentase Masa Kerja Honorer',
           subtitle: 'Tabel berjenjang persentase masa kerja tenaga honorer (Non-ASN)',
-          tag: 'Aturan Masa Kerja',
-        };
-      case 'hitung-poin':
-        return {
-          title: '2. Hitung Poin Seluruh Aspek & PFK BPJS',
-          subtitle: 'Lembar perhitungan komprehensif poin dasar, PFK BPJS, dan bobot kehadiran',
-          tag: 'Hitung Poin',
+          tag: 'Pengaturan',
         };
       case 'alokasi':
         return {
-          title: '3. Alokasi Jasa Pelayanan',
+          title: 'Alokasi Jasa Pelayanan',
           subtitle: 'Pengaturan dana kapitasi BPJS 60% dan daftar riwayat bulan-bulan sebelumnya',
           tag: 'Dana Kapitasi',
         };
       case 'absensi':
         return {
-          title: '4. Import Absensi Kehadiran',
+          title: 'Import Absensi Kehadiran',
           subtitle: 'Upload file absensi pegawai dan sinkronisasi hari hadir ke perhitungan jaspel',
           tag: 'Absensi',
         };
+      case 'hitung-poin':
+        return {
+          title: 'Hitung Poin Seluruh Aspek & PFK BPJS',
+          subtitle: 'Lembar perhitungan komprehensif poin dasar, rincian program, PFK BPJS, dan bobot kehadiran',
+          tag: 'Hitung Poin',
+        };
       case 'balancing':
         return {
-          title: '5. Hasil & Balancing Jaspel (Largest Remainder)',
+          title: 'Hasil & Balancing Jaspel (Largest Remainder)',
           subtitle: 'Rincian nominal bruto, potongan pajak PPh 21, iuran BPJS 1%, dan netto final zero selisih',
           tag: 'Balancing Jaspel',
         };
       case 'kwitansi':
         return {
-          title: '6. Kwitansi Global (Daftar Tanda Tangan)',
+          title: 'Kwitansi Global (Tanda Tangan)',
           subtitle: 'Dokumen bukti pengeluaran resmi puskesmas siap cetak A4 landscape & ekspor Excel',
-          tag: 'Dokumen Kwitansi',
+          tag: 'Kwitansi Global',
         };
       case 'history':
         return {
-          title: '7. History Jaspel Bulan Sebelumnya',
+          title: 'History Jaspel Bulan Sebelumnya',
           subtitle: 'Arsip rekapitulasi kapitasi dan rincian pembagian jaspel periode terdahulu',
-          tag: 'Arsip Riwayat',
+          tag: 'History Arsip',
         };
       case 'code':
         return {

@@ -56,14 +56,13 @@ export function downloadMasterPegawaiTemplate() {
     'Pendidikan (SD/SMP/SMA/D3/D4/S1/Profesi)',
     'Jabatan',
     'Tugas Administrasi',
+    'PJ Program',
     'Program 1',
-    'Program 2',
-    'Program 3',
-    'Program 4',
-    'Program 5',
-    'Jumlah Poin (Opsional/Auto)',
-    'Kehadiran (Hari)',
-    'Hari Maksimal'
+    'Tambahan 1',
+    'Tambahan 2',
+    'Tambahan 3',
+    'Tambahan 4',
+    'Jumlah Poin Dasar (Opsional/Auto)'
   ];
 
   const sampleRows = [
@@ -75,15 +74,14 @@ export function downloadMasterPegawaiTemplate() {
       '2003-12-01',
       'Profesi',
       'Dokter Gigi',
-      'Kepala Puskesmas',
-      'Manajemen Puskesmas',
-      'Pelayanan Gigi & Mulut',
+      'Kapus',
+      'Manajemen',
+      'Pelayanan Poli',
+      'Pelayanan Rawat Inap',
       '',
       '',
       '',
-      105,
-      22,
-      22
+      175
     ],
     [
       2,
@@ -91,17 +89,16 @@ export function downloadMasterPegawaiTemplate() {
       '19820506 201412 1 001',
       'PNS',
       '2014-12-01',
-      'Profesi',
-      'Dokter Umum',
-      'PJ Pokja UKP',
-      'Pelayanan Poli Umum',
-      'Pelayanan Rawat Inap & UGD',
+      'S1',
+      'Dokter',
+      'RJG dan RIG',
+      'Pelayanan Poli',
+      'Pelayanan Rawat Inap',
+      'Tambahan 1',
+      'Tambahan 2',
       '',
       '',
-      '',
-      130,
-      22,
-      22
+      221.2
     ],
     [
       3,
@@ -110,16 +107,15 @@ export function downloadMasterPegawaiTemplate() {
       'PNS',
       '1987-12-01',
       'Profesi',
-      'Perawat',
-      'PJ Pokja UKM',
-      'Pelayanan Keperawatan',
-      'Manajemen Rawat Inap',
+      'Ners / S.St Bd',
+      '-',
+      'Keperawatan',
+      'Pelayanan Rawat Inap',
       '',
       '',
       '',
-      90,
-      22,
-      22
+      '',
+      146.25
     ],
     [
       4,
@@ -135,9 +131,8 @@ export function downloadMasterPegawaiTemplate() {
       '',
       '',
       '',
-      86,
-      22,
-      22
+      '',
+      86
     ],
     [
       5,
@@ -153,9 +148,8 @@ export function downloadMasterPegawaiTemplate() {
       '',
       '',
       '',
-      55,
-      22,
-      22
+      '',
+      55
     ],
     [
       6,
@@ -171,13 +165,12 @@ export function downloadMasterPegawaiTemplate() {
       '',
       '',
       '',
-      40,
-      22,
-      22
+      '',
+      40
     ]
   ];
 
-  const colWidths = [6, 32, 24, 25, 18, 16, 22, 20, 24, 24, 20, 20, 20, 16, 12, 12];
+  const colWidths = [6, 32, 24, 25, 18, 16, 22, 20, 24, 24, 20, 20, 20, 20, 16];
   downloadExcel(
     'Format_Import_Master_Karyawan_Jaspel.xlsx',
     'Master_Karyawan',
@@ -205,65 +198,99 @@ export function downloadHitungPoinExcel(
   const headers = [
     'No',
     'Nama Pegawai',
-    'NIP / NIK',
     'Pendidikan',
-    'Status Kepegawaian',
-    'Jabatan',
-    'Tugas Administrasi',
-    'PJ Program',
     'TMT',
-    'Masa Kerja',
-    '% Masa Kerja',
-    'Poin Subtotal',
-    'Poin Tanpa Kehadiran (PFK BPJS)',
-    'Kehadiran (Hari)',
+    'Masa Kerja (Th)',
+    'Masa Kerja (Bln)',
+    'Masa Kerja (Hari)',
+    'Presensi',
+    'Hari Kerja',
     '% Kehadiran',
-    'Jumlah Seluruh Poin Akhir'
+    'Poin Ketenagaan',
+    'Poin Masa Kerja',
+    'Poin Rangkap Tugas',
+    'PJ Program',
+    'Program 1',
+    'Tambahan 1',
+    'Tambahan 2',
+    'Tambahan 3',
+    'Tambahan 4',
+    'Total Poin Program',
+    'Status Kepegawaian',
+    'Status Nilai',
+    'Total Point',
+    'Poin Kehadiran',
+    'Kinerja Uraian',
+    'Kinerja Nilai (%)',
+    'Poin Kinerja',
+    'Masa Kerja Bln (Non ASN)',
+    '% Masa Kerja',
+    'Exit Poin Final',
+    'Jasa Pelayanan (Rp)',
+    'Total Poin Tanpa Kehadiran',
+    'PFK BPJS (Rp)'
   ];
 
   const dataRows = rows.map((r, idx) => [
     idx + 1,
     r.nama,
-    r.nip,
     r.pendidikan,
-    r.status,
-    r.jabatan,
-    r.tugasAdmin,
-    [r.program1, r.program2, r.program3, r.program4, r.program5].filter(Boolean).join(', ') || '-',
     r.tmt,
-    `${r.lamaKerjaThn} Thn ${r.lamaKerjaBln} Bln`,
+    r.masaKerjaTh,
+    r.masaKerjaBln,
+    r.masaKerjaHari,
+    r.presensi,
+    r.hariKerja,
+    `${r.prosentaseKehadiran}%`,
+    r.poinKetenagaan,
+    r.poinMasaKerja,
+    r.poinRangkapTugas || 0,
+    r.poinPjProg ? `${r.poinPjProg} (${r.namaPjProg || ''})` : 0,
+    r.poinProg1 ? `${r.poinProg1} (${r.namaProg1 || ''})` : 0,
+    r.poinProg2 ? `${r.poinProg2} (${r.namaProg2 || ''})` : 0,
+    r.poinProg3 ? `${r.poinProg3} (${r.namaProg3 || ''})` : 0,
+    r.poinProg4 ? `${r.poinProg4} (${r.namaProg4 || ''})` : 0,
+    r.poinProg5 ? `${r.poinProg5} (${r.namaProg5 || ''})` : 0,
+    r.poinProgTambahanTotal,
+    r.statusKepegawaian === 'Honorer' ? 'NON ASN' : r.statusKepegawaian,
+    r.statusNilai,
+    r.totalPoint,
+    r.poinKehadiran,
+    r.kinerjaUraian,
+    `${r.kinerjaNilai}%`,
+    r.poinKinerja,
+    r.masaKerjaBulan,
     `${r.prosentaseMasaKerja}%`,
-    r.poinSubtotal,
-    r.poinPfkBpjs,
-    `${r.kehadiran} / ${r.maxKehadiran}`,
-    `${(r.rasioKehadiran * 100).toFixed(1)}%`,
-    Number(r.poinAkhir.toFixed(2))
+    r.exitPoin,
+    r.jasaPelayanan,
+    r.totalPoinTanpaKehadiran,
+    r.pfkBpjs
   ]);
 
-  const totalPfk = rows.reduce((s, r) => s + r.poinPfkBpjs, 0);
-  const totalAkhir = rows.reduce((s, r) => s + r.poinAkhir, 0);
+  const totalPoints = rows.reduce((s, r) => s + r.totalPoint, 0);
+  const totalExit = rows.reduce((s, r) => s + r.exitPoin, 0);
+  const totalJaspel = rows.reduce((s, r) => s + r.jasaPelayanan, 0);
+  const totalPfk = rows.reduce((s, r) => s + r.totalPoinTanpaKehadiran, 0);
+  const totalPfkRp = rows.reduce((s, r) => s + r.pfkBpjs, 0);
+
+  const totalProgramPoin = rows.reduce((s, r) => s + r.poinProgTambahanTotal, 0);
 
   const summaryRow = [
     '',
     'TOTAL',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    '',
-    totalPfk,
-    '',
-    '',
-    Number(totalAkhir.toFixed(2))
+    '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '',
+    Number(totalProgramPoin.toFixed(2)),
+    '', '',
+    Number(totalPoints.toFixed(2)),
+    '', '', '', '', '', '',
+    Number(totalExit.toFixed(2)),
+    totalJaspel,
+    Number(totalPfk.toFixed(2)),
+    totalPfkRp
   ];
 
   const allAoa = [...title, headers, ...dataRows, summaryRow];
-  const colWidths = [5, 30, 22, 14, 14, 20, 20, 32, 14, 16, 14, 14, 24, 16, 14, 22];
+  const colWidths = [5, 28, 12, 12, 8, 8, 8, 10, 10, 12, 12, 12, 14, 16, 16, 16, 16, 16, 16, 14, 14, 10, 12, 12, 12, 12, 12, 12, 12, 14, 18, 18, 18];
 
   downloadExcel(
     `Perhitungan_Poin_Jaspel_${bulan}_${tahun}.xlsx`,
