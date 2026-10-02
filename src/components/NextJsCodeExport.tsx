@@ -185,15 +185,15 @@ export function getGoogleAuthClient() {
   'env-local': {
     path: '.env.local',
     desc: 'Template Environment Variables untuk file .env.local di Next.js lokal',
-    code: `# ID Google Spreadsheet
-SPREADSHEET_ID="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms"
+    code: `# ID Google Spreadsheet (Ganti dengan ID Spreadsheet Anda)
+SPREADSHEET_ID="your_google_spreadsheet_id_here"
 
 # Kredensial Service Account (Pilih salah satu)
-GOOGLE_CLIENT_EMAIL="jaspel-bot@puskesmas-project.iam.gserviceaccount.com"
-GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC...\\n-----END PRIVATE KEY-----\\n"
+GOOGLE_CLIENT_EMAIL="your-service-account@your-project-id.iam.gserviceaccount.com"
+GOOGLE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\\n[KEY_DISEMBUNYIKAN_DEMI_KEAMANAN]\\n-----END PRIVATE KEY-----\\n"
 
-# Atau Base64:
-# GOOGLE_SERVICE_ACCOUNT_BASE64="eyd0eXBlJzogJ3NlcnZpY2VfYWNjb3VudCcsIC..."
+# Atau Opsi Base64:
+# GOOGLE_SERVICE_ACCOUNT_BASE64="[KODE_BASE64_DISEMBUNYIKAN]"
 `,
   },
 };

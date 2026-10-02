@@ -38,9 +38,10 @@ async function startServer() {
 
       res.json({
         success: true,
-        spreadsheetId: sheetId,
+        // Sembunyikan ID sebenarnya demi privasi & keamanan data instansi
+        spreadsheetId: isConfigured ? '••••••••••••••••••••••••••••••••' : '',
         isConfigured,
-        clientEmail: creds?.client_email || undefined,
+        clientEmail: creds?.client_email ? '••••••••@serviceaccount.gserviceaccount.com' : undefined,
         authMethod: process.env.GOOGLE_SERVICE_ACCOUNT_BASE64
           ? 'base64'
           : process.env.GOOGLE_SERVICE_ACCOUNT_JSON
@@ -52,7 +53,7 @@ async function startServer() {
     } catch (err: any) {
       res.json({
         success: false,
-        spreadsheetId: process.env.SPREADSHEET_ID || '',
+        spreadsheetId: '',
         isConfigured: false,
         error: err.message,
       });

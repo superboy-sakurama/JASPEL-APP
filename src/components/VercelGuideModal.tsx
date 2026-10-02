@@ -9,7 +9,9 @@ import {
   FileSpreadsheet, 
   ShieldCheck, 
   ExternalLink,
-  Code2
+  Code2,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export const VercelGuideModal: React.FC = () => {
@@ -19,6 +21,7 @@ export const VercelGuideModal: React.FC = () => {
   const [convertedKey, setConvertedKey] = useState('');
   const [convertedBase64, setConvertedBase64] = useState('');
   const [convertError, setConvertError] = useState<string | null>(null);
+  const [showSecrets, setShowSecrets] = useState(false);
 
   const copyToClipboard = (key: string, value: string) => {
     navigator.clipboard.writeText(value);
@@ -124,9 +127,19 @@ export const VercelGuideModal: React.FC = () => {
         {/* Converted Output Values */}
         {convertedEmail && (
           <div className="mt-4 p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
-            <h4 className="text-xs font-bold text-slate-800">
-              Hasil Format: Salin langsung ke Vercel Project Settings → Environment Variables
-            </h4>
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-800">
+                Hasil Format: Salin langsung ke Vercel Project Settings → Environment Variables
+              </h4>
+              <button
+                type="button"
+                onClick={() => setShowSecrets(!showSecrets)}
+                className="inline-flex items-center space-x-1 text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 px-2 py-0.5 rounded shadow-xs"
+              >
+                {showSecrets ? <EyeOff className="w-3 h-3 text-slate-500" /> : <Eye className="w-3 h-3 text-slate-500" />}
+                <span>{showSecrets ? 'Sembunyikan Key' : 'Tampilkan Key'}</span>
+              </button>
+            </div>
 
             {/* Field 1: GOOGLE_CLIENT_EMAIL */}
             <div className="space-y-1">
@@ -142,6 +155,7 @@ export const VercelGuideModal: React.FC = () => {
               </div>
               <input
                 readOnly
+                type={showSecrets ? "text" : "password"}
                 value={convertedEmail}
                 className="w-full text-xs font-mono px-3 py-1.5 rounded border border-slate-300 bg-white"
               />
@@ -161,6 +175,7 @@ export const VercelGuideModal: React.FC = () => {
               </div>
               <input
                 readOnly
+                type={showSecrets ? "text" : "password"}
                 value={convertedKey}
                 className="w-full text-xs font-mono px-3 py-1.5 rounded border border-slate-300 bg-white"
               />
@@ -180,6 +195,7 @@ export const VercelGuideModal: React.FC = () => {
               </div>
               <input
                 readOnly
+                type={showSecrets ? "text" : "password"}
                 value={convertedBase64}
                 className="w-full text-xs font-mono px-3 py-1.5 rounded border border-slate-300 bg-white"
               />
@@ -219,9 +235,9 @@ export const VercelGuideModal: React.FC = () => {
                   </span>
                 </td>
                 <td className="py-3 px-4 text-slate-600">
-                  ID unik dari URL Google Sheets (contoh:{' '}
+                  ID unik dari URL Google Sheets (contoh format:{' '}
                   <span className="font-mono bg-slate-100 px-1 py-0.5 rounded text-slate-800">
-                    1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms
+                    1Bxi••••••••••••••••••••••••••••••••2upms
                   </span>
                   ).
                 </td>

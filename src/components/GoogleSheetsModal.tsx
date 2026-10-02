@@ -8,8 +8,9 @@ import {
   RefreshCw, 
   ExternalLink, 
   Share2, 
-  ShieldCheck,
-  Check
+  ShieldCheck, 
+  Check,
+  Lock
 } from 'lucide-react';
 
 interface GoogleSheetsModalProps {
@@ -107,22 +108,42 @@ export const GoogleSheetsModal: React.FC<GoogleSheetsModalProps> = ({
             </div>
           </div>
 
-          {/* Spreadsheet ID & Email Details */}
-          <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-slate-500">SPREADSHEET_ID:</span>
-              <span className="font-mono font-bold text-slate-800">
-                {config.spreadsheetId || '(Belum diset di ENV)'}
+          {/* Spreadsheet ID & Email Details (Disembunyikan Penuh demi Keamanan & Privasi) */}
+          <div className="bg-slate-50 rounded-xl p-3.5 border border-slate-200 space-y-2.5">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-200/80">
+              <span className="text-slate-700 font-medium flex items-center space-x-1.5 text-xs">
+                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <span className="font-semibold">Kredensial & Kunci Database (Enkripsi Server):</span>
+              </span>
+              <span className="inline-flex items-center space-x-1 text-[10px] font-semibold text-emerald-800 bg-emerald-100/80 border border-emerald-300 px-2 py-0.5 rounded-full">
+                <Lock className="w-2.5 h-2.5" />
+                <span>Disembunyikan (Aman)</span>
               </span>
             </div>
-            {config.clientEmail && (
-              <div className="flex justify-between items-center">
-                <span className="text-slate-500">Service Account Email:</span>
-                <span className="font-mono font-semibold text-slate-700 truncate max-w-[260px]">
-                  {config.clientEmail}
+
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Spreadsheet ID:</span>
+              <div className="flex items-center space-x-2">
+                <span className="font-mono text-xs text-slate-700 tracking-widest font-semibold select-none">
+                  ••••••••••••••••••••••••••••••••
+                </span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-100/70 border border-emerald-300 px-1.5 py-0.5 rounded font-medium">
+                  {config.isConfigured ? 'Tersimpan Aman di ENV' : 'Belum Diset'}
                 </span>
               </div>
-            )}
+            </div>
+
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-slate-500 font-medium">Service Account Private Key:</span>
+              <div className="flex items-center space-x-2">
+                <span className="font-mono text-xs text-slate-700 tracking-widest font-semibold select-none">
+                  ••••••••••••••••••••••••••••••••
+                </span>
+                <span className="text-[10px] text-emerald-700 bg-emerald-100/70 border border-emerald-300 px-1.5 py-0.5 rounded font-medium">
+                  Terenkripsi
+                </span>
+              </div>
+            </div>
           </div>
 
           {/* Verification of the 4 Required Database Sheets */}
