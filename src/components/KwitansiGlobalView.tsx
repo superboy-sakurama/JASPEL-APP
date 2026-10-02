@@ -360,9 +360,19 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
       >
         {/* KWITANSI Title Box (Exact match to official government form) */}
         <div className="border-t-2 border-b-2 border-slate-900 py-1.5 text-center my-2">
-          <h1 className="text-sm font-extrabold tracking-widest uppercase">
-            KWITANSI
+          <div className="text-[10px] font-bold tracking-wider text-slate-700 uppercase">
+            PEMERINTAH KABUPATEN / DINAS KESEHATAN • {pejabat.namaFaskes.toUpperCase()}
+          </div>
+          <h1 className="text-sm font-extrabold tracking-widest uppercase my-0.5">
+            KWITANSI GLOBAL / BUKTI PEMBAYARAN TANDA TANGAN
           </h1>
+          <div className="text-[10px] font-mono text-slate-600 flex justify-center space-x-3">
+            <span>KODE INSTANSI: <b>{pejabat.kodeInstansi || '1.02.0.00.0.00.01.0000'}</b></span>
+            <span>•</span>
+            <span>NO. DPA: <b>{pejabat.nomorDpa || 'DPA/A.1/1.02.0.00.0.00.01.0000/001/2026'}</b></span>
+            <span>•</span>
+            <span>REKENING: <b>{pejabat.kodeRekeningBelanja || '5.1.02.02.01.0014'}</b></span>
+          </div>
         </div>
 
         {/* Kwitansi Metadata Header */}
@@ -519,10 +529,10 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
           </span>
         </div>
 
-        {/* Official 3-Column Signatories Section (KPA, PPTK, Bendahara) */}
-        <div className="pt-6 grid grid-cols-3 text-center text-xs gap-4 break-inside-avoid">
+        {/* Official 4-Column Signatories Section (KPA, PPK, PPTK, Bendahara) */}
+        <div className="pt-6 grid grid-cols-2 md:grid-cols-4 text-center text-xs gap-4 break-inside-avoid">
           {/* Signatory 1: KPA */}
-          <div className="flex flex-col justify-between h-36">
+          <div className="flex flex-col justify-between h-36 p-2 rounded bg-slate-50/50 print:bg-transparent">
             <div>
               <p className="font-semibold text-slate-800">{pejabat.kpaJabatan}</p>
               <p className="font-bold text-slate-700">(KPA)</p>
@@ -535,8 +545,22 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
             </div>
           </div>
 
-          {/* Signatory 2: PPTK */}
-          <div className="flex flex-col justify-between h-36">
+          {/* Signatory 2: PPK */}
+          <div className="flex flex-col justify-between h-36 p-2 rounded bg-slate-50/50 print:bg-transparent">
+            <div>
+              <p className="font-semibold text-slate-800">{pejabat.jabatanPejabatKeuangan || 'Pejabat Penatausahaan Keuangan'}</p>
+              <p className="font-bold text-slate-700">(PPK)</p>
+            </div>
+            <div>
+              <p className="font-bold text-slate-950 underline">{pejabat.namaPejabatKeuangan || pejabat.pptkNama}</p>
+              <p className="font-mono text-slate-600 text-[10px] mt-0.5">
+                NIP. {pejabat.nipPejabatKeuangan || pejabat.pptkNip}
+              </p>
+            </div>
+          </div>
+
+          {/* Signatory 3: PPTK */}
+          <div className="flex flex-col justify-between h-36 p-2 rounded bg-slate-50/50 print:bg-transparent">
             <div>
               <p className="font-semibold text-slate-800">{pejabat.pptkJabatan}</p>
               <p className="font-bold text-slate-700">(PPTK)</p>
@@ -549,8 +573,8 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
             </div>
           </div>
 
-          {/* Signatory 3: Bendahara */}
-          <div className="flex flex-col justify-between h-36">
+          {/* Signatory 4: Bendahara */}
+          <div className="flex flex-col justify-between h-36 p-2 rounded bg-slate-50/50 print:bg-transparent">
             <div>
               <p className="text-slate-600">
                 Lunas dibayar Tgl. <span className="font-semibold text-slate-900">{pejabat.lunasTgl || '..................'}</span>

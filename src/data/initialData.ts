@@ -1,15 +1,47 @@
-import { Employee, KapitasiSetup, KwitansiPejabat, JaspelHistoryRecord } from '../types/jaspel';
+import { 
+  Employee, 
+  KapitasiSetup, 
+  KwitansiPejabat, 
+  JaspelHistoryRecord, 
+  InstansiConfig 
+} from '../types/jaspel';
 import { calculateJaspel } from '../lib/calculateJaspel';
 
+export const DEFAULT_INSTANSI: InstansiConfig = {
+  namaInstansi: 'UPTD Puskesmas Kalitengah',
+  kodeInstansi: '1.02.0.00.0.00.01.0000',
+  kodeRekeningBelanja: '5.1.02.02.01.0014',
+  nomorDpa: 'DPA/A.1/1.02.0.00.0.00.01.0000/001/2026',
+  namaKepala: 'drg. Indah Mardiyah Hayati, M.H.',
+  nipKepala: '19750411 200312 2 004',
+  jabatanKepala: 'Plt. Kepala Puskesmas Kalitengah (KPA)',
+  namaPejabatKeuangan: 'Muhammad Faizal, S.Si.',
+  nipPejabatKeuangan: '19950528 201902 1 006',
+  jabatanPejabatKeuangan: 'Pejabat Penatausahaan Keuangan (PPK)',
+  namaBendahara: 'Tri Mariyono Hadi Upoyo, S.Kep., Ns',
+  nipBendahara: '19820622 200604 1 006',
+  jabatanBendahara: 'Bendahara Pengeluaran',
+  namaPptk: 'Muhammad Faizal, S.Si.',
+  nipPptk: '19950528 201902 1 006',
+  jabatanPptk: 'Pejabat Pelaksana Teknis Kegiatan (PPTK)',
+  tanggalLunas: '23/09/2026',
+};
+
 export const DEFAULT_PEJABAT: KwitansiPejabat = {
-  namaFaskes: 'Puskesmas Kalitengah',
+  namaFaskes: 'UPTD Puskesmas Kalitengah',
+  kodeInstansi: '1.02.0.00.0.00.01.0000',
+  kodeRekeningBelanja: '5.1.02.02.01.0014',
+  nomorDpa: 'DPA/A.1/1.02.0.00.0.00.01.0000/001/2026',
   kpaTitle: 'Kuasa Pengguna Anggaran Puskesmas Kalitengah',
   kpaNama: 'drg. Indah Mardiyah Hayati, M.H.',
   kpaNip: '19750411 200312 2 004',
   kpaJabatan: 'Plt. Kepala Puskesmas Kalitengah (KPA)',
+  namaPejabatKeuangan: 'Muhammad Faizal, S.Si.',
+  nipPejabatKeuangan: '19950528 201902 1 006',
+  jabatanPejabatKeuangan: 'Pejabat Penatausahaan Keuangan (PPK)',
   pptkNama: 'Muhammad Faizal, S.Si.',
   pptkNip: '19950528 201902 1 006',
-  pptkJabatan: 'Pejabat Pelaksana Teknik Kegiatan (PPTK)',
+  pptkJabatan: 'Pejabat Pelaksana Teknis Kegiatan (PPTK)',
   bendaharaNama: 'Tri Mariyono Hadi Upoyo, S.Kep., Ns',
   bendaharaNip: '19820622 200604 1 006',
   bendaharaJabatan: 'Bendahara Pengeluaran',
