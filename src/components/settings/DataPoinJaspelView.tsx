@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PoinJaspelConfig, CustomPoinItem } from '../../types/jaspel';
-import { DEFAULT_POIN_JASPEL } from '../../lib/pointCalculator';
+import { DEFAULT_POIN_JASPEL, DEFAULT_TUGAS_TAMBAHAN_LIST } from '../../lib/pointCalculator';
 import { 
   Award, 
   Save, 
@@ -15,7 +15,16 @@ import {
   Plus,
   Trash2,
   X,
-  Layers
+  Layers,
+  ToggleLeft,
+  ToggleRight,
+  Split,
+  AlertTriangle,
+  ClipboardList,
+  Sparkles,
+  Info,
+  SlidersHorizontal,
+  Check
 } from 'lucide-react';
 
 interface DataPoinJaspelViewProps {
@@ -29,7 +38,17 @@ export const DataPoinJaspelView: React.FC<DataPoinJaspelViewProps> = ({
   onSaveConfig,
   onRecalculateAllEmployees,
 }) => {
-  const [formData, setFormData] = useState<PoinJaspelConfig>({ ...poinConfig });
+  const [formData, setFormData] = useState<PoinJaspelConfig>({ 
+    ...poinConfig,
+    tugasTambahanEnabled: poinConfig.tugasTambahanEnabled ?? true,
+    customTugasTambahanList: poinConfig.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST,
+    enableSharedPointDivision: poinConfig.enableSharedPointDivision ?? true,
+    progPoliUmum: poinConfig.progPoliUmum ?? 10,
+    progUgd: poinConfig.progUgd ?? 15,
+    progRawatInap: poinConfig.progRawatInap ?? 10,
+    ugdDokterPercent: poinConfig.ugdDokterPercent ?? 50,
+    ugdPetugasPercent: poinConfig.ugdPetugasPercent ?? 50,
+  });
   const [isSaved, setIsSaved] = useState(false);
 
   // Modal State Tambah Tugas Administrasi
@@ -41,6 +60,11 @@ export const DataPoinJaspelView: React.FC<DataPoinJaspelViewProps> = ({
   const [isAddProgModalOpen, setIsAddProgModalOpen] = useState(false);
   const [newProgNama, setNewProgNama] = useState('');
   const [newProgPoin, setNewProgPoin] = useState<number>(5);
+
+  // Modal State Tambah Tugas Administrasi Tambahan (Kelompok 7)
+  const [isAddTugasTambahanModalOpen, setIsAddTugasTambahanModalOpen] = useState(false);
+  const [newTugasTambahanNama, setNewTugasTambahanNama] = useState('');
+  const [newTugasTambahanPoin, setNewTugasTambahanPoin] = useState<number>(10);
 
   const handleChange = (field: keyof PoinJaspelConfig, val: number) => {
     setFormData((prev) => ({ ...prev, [field]: Number(val) || 0 }));
@@ -130,6 +154,52 @@ export const DataPoinJaspelView: React.FC<DataPoinJaspelViewProps> = ({
       ...prev,
       customProgramList: (prev.customProgramList || []).map((p) =>
         p.id === id ? { ...p, poin: Number(poin) || 0 } : p
+      ),
+    }));
+    setIsSaved(false);
+  };
+
+  // Handler Kelompok 7: Toggle Aktif/Nonaktif Seluruh Kelompok
+  const handleToggleTugasTambahanGroup = () => {
+    setFormData((prev) => ({
+      ...prev,
+      tugasTambahanEnabled: !prev.tugasTambahanEnabled,
+    }));
+    setIsSaved(false);
+  };
+
+  // Handler Kelompok 7: Tambah Tugas Administrasi Tambahan Baru
+  const handleAddCustomTugasTambahan = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTugasTambahanNama.trim()) return;
+    const item: CustomPoinItem = {
+      id: `tt-${Date.now()}`,
+      nama: newTugasTambahanNama.trim(),
+      poin: Number(newTugasTambahanPoin) || 0,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      customTugasTambahanList: [...(prev.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST), item],
+    }));
+    setNewTugasTambahanNama('');
+    setNewTugasTambahanPoin(10);
+    setIsAddTugasTambahanModalOpen(false);
+    setIsSaved(false);
+  };
+
+  const handleDeleteCustomTugasTambahan = (id: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      customTugasTambahanList: (prev.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST).filter((t) => t.id !== id),
+    }));
+    setIsSaved(false);
+  };
+
+  const handleCustomTugasTambahanPoinChange = (id: string, poin: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      customTugasTambahanList: (prev.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST).map((t) =>
+        t.id === id ? { ...t, poin: Number(poin) || 0 } : t
       ),
     }));
     setIsSaved(false);
@@ -560,7 +630,399 @@ export const DataPoinJaspelView: React.FC<DataPoinJaspelViewProps> = ({
             </div>
           </div>
         </div>
+
+        {/* PENGATURAN TERKAIT NILAI POIN: PEMBAGIAN POIN BERSAMA & ATURAN KHUSUS UGD */}
+        <div className="bg-linear-to-br from-indigo-50/70 via-white to-sky-50/60 rounded-xl border border-indigo-200 p-6 shadow-sm space-y-5">
+          <div className="border-b border-indigo-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 bg-indigo-600 text-white rounded-lg shadow-xs">
+                <Split className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Pengaturan Pembagian Nilai Poin Bersama (Shared Points) & Aturan UGD
+                  </h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                    Sistem Otomatis
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 mt-0.5">
+                  Aturan pembagian nilai poin jika satu program atau tugas dijalankan bersama oleh beberapa orang.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setFormData((prev) => ({
+                  ...prev,
+                  enableSharedPointDivision: !(prev.enableSharedPointDivision ?? true),
+                }));
+                setIsSaved(false);
+              }}
+              className={`inline-flex items-center space-x-2 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all shadow-xs ${
+                formData.enableSharedPointDivision !== false
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-700'
+                  : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border-slate-300'
+              }`}
+            >
+              {formData.enableSharedPointDivision !== false ? (
+                <>
+                  <ToggleRight className="w-4 h-4" />
+                  <span>Fitur Pembagian Bersama: AKTIF</span>
+                </>
+              ) : (
+                <>
+                  <ToggleLeft className="w-4 h-4" />
+                  <span>Fitur Pembagian Bersama: NONAKTIF</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {/* Box 1: Aturan Umum (Poli Umum dll.) */}
+            <div className="bg-white rounded-xl p-4 border border-indigo-100 shadow-xs space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-indigo-600"></div>
+                  <h4 className="text-xs font-bold text-slate-800">
+                    1. Aturan Umum: Dibagi Sebanyak Orang yang Menggunakan
+                  </h4>
+                </div>
+                <span className="text-[10px] bg-indigo-50 text-indigo-700 font-mono px-2 py-0.5 rounded font-semibold">
+                  Semua Kriteria (Kecuali UGD)
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Jika poin digunakan untuk beberapa orang, maka nilai poin dibagi sebanyak orang yang menggunakan. 
+                <span className="block mt-1 p-2 bg-indigo-50/60 rounded border border-indigo-100 font-mono text-[10.5px] text-indigo-950">
+                  💡 <strong>Contoh:</strong> Poin Poli Umum senilai 10 poin, jika terdapat 2 karyawan yang bertugas atau mendapatkan Poin Poli Umum, maka masing-masing mendapatkan <strong>5 poin</strong> (10 ÷ 2).
+                </span>
+              </p>
+
+              <div className="pt-2 border-t border-slate-100 grid grid-cols-2 gap-2.5">
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Nilai Poin Poli Umum
+                  </label>
+                  <div className="flex items-center space-x-1.5">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={formData.progPoliUmum ?? 10}
+                      onChange={(e) => handleChange('progPoliUmum', Number(e.target.value))}
+                      className="w-full text-xs font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white"
+                    />
+                    <span className="text-xs text-slate-500">Poin</span>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-200">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Nilai Poin Rawat Inap
+                  </label>
+                  <div className="flex items-center space-x-1.5">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={formData.progRawatInap ?? 10}
+                      onChange={(e) => handleChange('progRawatInap', Number(e.target.value))}
+                      className="w-full text-xs font-mono font-bold px-2 py-1 rounded border border-slate-300 bg-white"
+                    />
+                    <span className="text-xs text-slate-500">Poin</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Box 2: Aturan Khusus UGD */}
+            <div className="bg-white rounded-xl p-4 border border-rose-200/80 shadow-xs space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center space-x-2">
+                  <div className="w-2 h-2 rounded-full bg-rose-600"></div>
+                  <h4 className="text-xs font-bold text-slate-800">
+                    2. Aturan Khusus UGD (Unit Gawat Darurat)
+                  </h4>
+                </div>
+                <span className="text-[10px] bg-rose-50 text-rose-700 font-mono px-2 py-0.5 rounded font-semibold">
+                  50% Dokter • 50% Petugas Lain
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 leading-relaxed">
+                Nilai Poin UGD dibagi dua: <strong>50% untuk dokter</strong> dan <strong>50% sisanya untuk petugas lain</strong> (Perawat dan Analis/Bidan). Pembagiannya sama dengan pengaturan pertama di atas.
+                <span className="block mt-1 p-2 bg-rose-50/60 rounded border border-rose-100 font-mono text-[10.5px] text-rose-950">
+                  🚑 <strong>Contoh:</strong> Jika ada 2 dokter dan 5 perawat di UGD, maka kuota 50% dokter dibagi 2 dokter, dan kuota 50% perawat dibagi bersama 5 perawat.
+                </span>
+              </p>
+
+              <div className="pt-2 border-t border-slate-100 grid grid-cols-3 gap-2">
+                <div className="p-2 bg-slate-50 rounded-lg border border-slate-200">
+                  <label className="block text-[10.5px] font-bold text-slate-700 mb-1">
+                    Total Poin UGD
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      value={formData.progUgd ?? 15}
+                      onChange={(e) => handleChange('progUgd', Number(e.target.value))}
+                      className="w-full text-xs font-mono font-bold px-1.5 py-1 rounded border border-slate-300 bg-white"
+                    />
+                    <span className="text-[11px] text-slate-500">Poin</span>
+                  </div>
+                </div>
+
+                <div className="p-2 bg-rose-50/50 rounded-lg border border-rose-200">
+                  <label className="block text-[10.5px] font-bold text-rose-900 mb-1">
+                    Porsi Dokter (%)
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="100"
+                      value={formData.ugdDokterPercent ?? 50}
+                      onChange={(e) => handleChange('ugdDokterPercent', Number(e.target.value))}
+                      className="w-full text-xs font-mono font-bold px-1.5 py-1 rounded border border-rose-300 bg-white"
+                    />
+                    <span className="text-[11px] text-rose-700">%</span>
+                  </div>
+                </div>
+
+                <div className="p-2 bg-sky-50/50 rounded-lg border border-sky-200">
+                  <label className="block text-[10.5px] font-bold text-sky-900 mb-1">
+                    Porsi Petugas Lain (%)
+                  </label>
+                  <div className="flex items-center space-x-1">
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="100"
+                      value={formData.ugdPetugasPercent ?? 50}
+                      onChange={(e) => handleChange('ugdPetugasPercent', Number(e.target.value))}
+                      className="w-full text-xs font-mono font-bold px-1.5 py-1 rounded border border-sky-300 bg-white"
+                    />
+                    <span className="text-[11px] text-sky-700">%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* GRUP 7: TUGAS ADMINISTRASI TAMBAHAN (Dapat Diaktifkan / Dinonaktifkan Secara Keseluruhan) */}
+        <div className={`rounded-xl border shadow-sm p-6 space-y-4 transition-all ${
+          formData.tugasTambahanEnabled !== false 
+            ? 'bg-white border-purple-200/90' 
+            : 'bg-slate-50/80 border-slate-300'
+        }`}>
+          <div className="border-b border-slate-100 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-2.5">
+              <div className={`p-2 rounded-lg ${
+                formData.tugasTambahanEnabled !== false
+                  ? 'bg-purple-100 text-purple-700'
+                  : 'bg-slate-200 text-slate-500'
+              }`}>
+                <ClipboardList className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <h3 className="text-sm font-bold text-slate-900">
+                    7. Tugas Administrasi Tambahan
+                  </h3>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
+                    formData.tugasTambahanEnabled !== false
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}>
+                    {formData.tugasTambahanEnabled !== false ? '● STATUS: AKTIF' : '○ STATUS: NONAKTIF'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  Kelompok tugas tambahan khusus puskesmas. Dapat diaktifkan atau dinonaktifkan secara keseluruhan pada semua item tugas khusus kelompok ini saja.
+                </p>
+              </div>
+            </div>
+
+            {/* Aksi Pojok Kanan: Toggle Saklar Kelompok + Tombol Tambah Program/Tugas (seperti nomor 4) */}
+            <div className="flex items-center space-x-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleToggleTugasTambahanGroup}
+                className={`inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all shadow-xs ${
+                  formData.tugasTambahanEnabled !== false
+                    ? 'bg-purple-50 hover:bg-purple-100 text-purple-800 border-purple-300'
+                    : 'bg-rose-600 hover:bg-rose-700 text-white border-rose-700'
+                }`}
+                title="Klik untuk mengaktifkan atau menonaktifkan seluruh tugas pada kelompok 7 ini"
+              >
+                {formData.tugasTambahanEnabled !== false ? (
+                  <>
+                    <ToggleRight className="w-4 h-4 text-purple-600" />
+                    <span>Nonaktifkan Kelompok Ini</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-4 h-4 text-white" />
+                    <span>Aktifkan Kelompok Ini</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsAddTugasTambahanModalOpen(true)}
+                className="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                title="Tambah tugas administrasi tambahan baru ke kelompok ini"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Tambah Program/Tugas</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Banner Peringatan jika Kelompok Nonaktif */}
+          {formData.tugasTambahanEnabled === false && (
+            <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-900 flex items-start space-x-2.5">
+              <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+              <div>
+                <strong className="font-bold">Kelompok 7 Berstatus Nonaktif!</strong>
+                <p className="text-[11px] text-rose-700 mt-0.5">
+                  Semua tugas yang ada di kelompok ini dinonaktifkan secara keseluruhan. Poin tugas tambahan bagi karyawan yang memperoleh poin dari tugas tambahan khusus ini <strong>TIDAK IKUT TERAKUMULASI ATAU TIDAK DIHITUNG POINNYA</strong> pada lembar Hitung Poin.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Grid Daftar Tugas Administrasi Tambahan */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {(formData.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST).map((ct) => (
+              <div 
+                key={ct.id} 
+                className={`p-3 rounded-xl border relative group transition-all ${
+                  formData.tugasTambahanEnabled !== false
+                    ? 'bg-purple-50/40 border-purple-200 hover:border-purple-300'
+                    : 'bg-slate-100/80 border-slate-200 opacity-60'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-1 mb-1">
+                  <div>
+                    <span className="block text-xs font-bold text-slate-800 line-clamp-1" title={ct.nama}>
+                      {ct.nama}
+                    </span>
+                    <span className={`inline-block text-[9.5px] px-1.5 py-0.2 rounded font-semibold mt-0.5 ${
+                      formData.tugasTambahanEnabled !== false
+                        ? 'bg-purple-100 text-purple-800'
+                        : 'bg-slate-200 text-slate-600'
+                    }`}>
+                      {formData.tugasTambahanEnabled !== false ? 'Aktif' : 'Nonaktif (0 Poin)'}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteCustomTugasTambahan(ct.id)}
+                    className="text-slate-400 hover:text-rose-600 p-1 rounded transition-colors shrink-0"
+                    title="Hapus tugas tambahan ini"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                <div className="flex items-center space-x-1.5 mt-2">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    value={ct.poin}
+                    onChange={(e) => handleCustomTugasTambahanPoinChange(ct.id, Number(e.target.value))}
+                    className="w-full text-xs font-bold font-mono px-2 py-1.5 rounded-lg border border-purple-300 bg-white"
+                  />
+                  <span className="text-[11px] text-purple-700 font-medium">Poin</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </form>
+
+      {/* Modal Tambah Tugas Administrasi Tambahan (Kelompok 7) */}
+      {isAddTugasTambahanModalOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-5 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                <ClipboardList className="w-4 h-4 text-purple-600" />
+                <span>Tambah Tugas Administrasi Tambahan (Kel. 7)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsAddTugasTambahanModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddCustomTugasTambahan} className="space-y-4 mt-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Nama Tugas Administrasi Tambahan <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Tim Pengelola BOK Puskesmas / Tim Akreditasi"
+                  value={newTugasTambahanNama}
+                  onChange={(e) => setNewTugasTambahanNama(e.target.value)}
+                  className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-hidden focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Jumlah Nilai Poin <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    required
+                    value={newTugasTambahanPoin}
+                    onChange={(e) => setNewTugasTambahanPoin(Number(e.target.value))}
+                    className="w-full text-xs font-bold font-mono px-3 py-2 rounded-lg border border-slate-300 bg-white focus:outline-hidden focus:border-purple-500"
+                  />
+                  <span className="text-xs text-slate-500 font-semibold">Poin</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddTugasTambahanModalOpen(false)}
+                  className="px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-100 rounded-lg"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-1.5 text-xs font-semibold text-white bg-purple-600 hover:bg-purple-700 rounded-lg shadow-xs"
+                >
+                  Simpan Tugas
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Modal Tambah Tugas Administrasi */}
       {isAddTugasModalOpen && (

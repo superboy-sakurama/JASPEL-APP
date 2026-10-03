@@ -6,7 +6,7 @@ import {
   InstansiConfig, 
   HitungPoinRow 
 } from '../types/jaspel';
-import { evaluateHitungPoinRow } from '../lib/pointCalculator';
+import { evaluateHitungPoinRow, buildSharedPointsContext } from '../lib/pointCalculator';
 import { formatNumber, formatRupiah } from '../lib/utils';
 import { downloadExcel } from '../lib/excelHelper';
 import { 
@@ -25,7 +25,13 @@ import {
   Layers,
   ChevronRight,
   Eye,
-  EyeOff
+  EyeOff,
+  Split,
+  ClipboardList,
+  Info,
+  Stethoscope,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 
 interface HitungPoinViewProps {
@@ -55,14 +61,20 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
   const [showProgramNames, setShowProgramNames] = useState(true);
   const [isAppliedToast, setIsAppliedToast] = useState(false);
   const [showProgramModal, setShowProgramModal] = useState(false);
+  const [showSharedModal, setShowSharedModal] = useState(false);
+
+  // Bangun Shared Points Context (Perhitungan Pembagian Poin Bersama & UGD 50/50)
+  const sharedContext = useMemo(() => {
+    return buildSharedPointsContext(employees, poinConfig);
+  }, [employees, poinConfig]);
 
   // Evaluasi seluruh baris poin
   // Pass 1: compute sums for scaling Jaspel and BPJS
   const preliminaryRows = useMemo(() => {
     return employees.map((emp, idx) =>
-      evaluateHitungPoinRow(emp, idx, poinConfig, masaKerjaRules, 0, 1, 1)
+      evaluateHitungPoinRow(emp, idx, poinConfig, masaKerjaRules, 0, 1, 1, undefined, employees, sharedContext)
     );
-  }, [employees, poinConfig, masaKerjaRules]);
+  }, [employees, poinConfig, masaKerjaRules, sharedContext]);
 
   const totalExitPoinAll = useMemo(() => {
     return preliminaryRows.reduce((sum, r) => sum + r.exitPoin, 0) || 1;
@@ -82,10 +94,13 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
         masaKerjaRules,
         totalAlokasiKapitasi,
         totalExitPoinAll,
-        totalBasePoinAll
+        totalBasePoinAll,
+        undefined,
+        employees,
+        sharedContext
       )
     );
-  }, [employees, poinConfig, masaKerjaRules, totalAlokasiKapitasi, totalExitPoinAll, totalBasePoinAll]);
+  }, [employees, poinConfig, masaKerjaRules, totalAlokasiKapitasi, totalExitPoinAll, totalBasePoinAll, sharedContext]);
 
   // Filtered rows
   const filteredRows = useMemo(() => {
@@ -122,6 +137,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
   const totalPegawai = calculatedRows.length;
   const sumTotalPoints = calculatedRows.reduce((s, r) => s + r.totalPoint, 0);
   const sumTotalProgramPoints = calculatedRows.reduce((s, r) => s + r.poinProgTambahanTotal, 0);
+  const sumTotalTugasTambahanPoints = calculatedRows.reduce((s, r) => s + (r.poinTugasTambahan || 0), 0);
   const sumPoinKehadiran = calculatedRows.reduce((s, r) => s + r.poinKehadiran, 0);
   const sumPoinKinerja = calculatedRows.reduce((s, r) => s + r.poinKinerja, 0);
   const sumExitPoin = calculatedRows.reduce((s, r) => s + r.exitPoin, 0);
@@ -160,7 +176,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
       'TMT',
       'JML Masa Kerja', '', '',
       'VARIABEL KEHADIRAN', '', '',
-      'VARIABEL NILAI', '', '',
+      'VARIABEL NILAI', '', '', '',
       'TANGGUNG JAWAB PROGRAM', '', '', '', '', '', '',
       'STATUS KEPEGAWAIAN', '',
       'TOTAL POINT',
@@ -177,7 +193,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
       '', '', '', '',
       'Th', 'Bln', 'Hari',
       'PRESENSI', 'HARI KERJA', 'PROSENTASE (%)',
-      'JENIS KETENAGAAN', 'MASA KERJA', 'RANGKAP TUGAS ADMIN',
+      'JENIS KETENAGAAN', 'MASA KERJA', 'RANGKAP TUGAS ADMIN', 'TUGAS TAMBAHAN (KEL. 7)',
       'PJ PROGRAM', 'PROGRAM 1', 'TAMBAHAN 1', 'TAMBAHAN 2', 'TAMBAHAN 3', 'TAMBAHAN 4', 'TOTAL PROGRAM',
       'STATUS', 'NILAI',
       '',
@@ -204,6 +220,9 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
       r.poinKetenagaan,
       r.poinMasaKerja,
       r.poinRangkapTugas || '',
+      r.poinTugasTambahan > 0 
+        ? `${r.poinTugasTambahan} (${r.namaTugasTambahan || ''})` 
+        : (r.isTugasTambahanActive ? (r.namaTugasTambahan && r.namaTugasTambahan !== '-' ? r.namaTugasTambahan : '') : 'Nonaktif (0)'),
       r.poinPjProg ? `${r.poinPjProg} (${r.namaPjProg || ''})` : '',
       r.poinProg1 ? `${r.poinProg1} (${r.namaProg1 || ''})` : '',
       r.poinProg2 ? `${r.poinProg2} (${r.namaProg2 || ''})` : '',
@@ -235,7 +254,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
 
     const totalRow = [
       '', 'TOTAL', '', '', '', '', '', '', '', '',
-      '', '', '',
+      '', '', '', Number(sumTotalTugasTambahanPoints.toFixed(2)),
       '', '', '', '', '', '', Number(sumTotalProgramPoints.toFixed(2)),
       '', '',
       Number(sumTotalPoints.toFixed(2)),
@@ -298,6 +317,16 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
         <div className="flex flex-wrap items-center gap-2 shrink-0">
           <button
             type="button"
+            onClick={() => setShowSharedModal(true)}
+            className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg border border-indigo-300 text-xs font-semibold text-indigo-800 bg-indigo-50 hover:bg-indigo-100 transition-colors shadow-xs"
+            title="Lihat rincian pembagian poin bersama dan aturan khusus UGD"
+          >
+            <Split className="w-3.5 h-3.5 text-indigo-600" />
+            <span>Rincian Pembagian Bersama & UGD</span>
+          </button>
+
+          <button
+            type="button"
             onClick={() => setShowProgramModal(true)}
             className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg border border-teal-300 text-xs font-semibold text-teal-800 bg-teal-50 hover:bg-teal-100 transition-colors"
             title="Lihat rekapitulasi daftar pemegang program"
@@ -337,8 +366,8 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
       )}
 
       {/* KPI Metric Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-[11px] font-medium text-slate-500 block">Total Pegawai</span>
           <div className="flex items-baseline space-x-1 mt-1">
             <span className="text-xl font-bold font-mono text-slate-900">{totalPegawai}</span>
@@ -346,7 +375,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-teal-200 bg-teal-50/20 shadow-xs">
+        <div className="bg-white p-3 rounded-xl border border-teal-200 bg-teal-50/20 shadow-xs">
           <span className="text-[11px] font-semibold text-teal-800 block">Poin Program Total</span>
           <div className="flex items-baseline space-x-1 mt-1">
             <span className="text-xl font-bold font-mono text-teal-900">{formatNumber(sumTotalProgramPoints, 1)}</span>
@@ -354,7 +383,29 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs">
+        {/* Tugas Administrasi Tambahan Kelompok 7 */}
+        <div className={`p-3 rounded-xl border shadow-xs transition-all ${
+          poinConfig.tugasTambahanEnabled !== false 
+            ? 'bg-purple-50/30 border-purple-200 text-purple-900' 
+            : 'bg-slate-100/70 border-slate-300 text-slate-500'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold block truncate">Poin Kel. 7 (Tugas Tambahan)</span>
+            <span className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+              poinConfig.tugasTambahanEnabled !== false ? 'bg-purple-100 text-purple-800' : 'bg-rose-100 text-rose-800'
+            }`}>
+              {poinConfig.tugasTambahanEnabled !== false ? 'AKTIF' : 'NONAKTIF'}
+            </span>
+          </div>
+          <div className="flex items-baseline space-x-1 mt-1">
+            <span className="text-xl font-bold font-mono">
+              {poinConfig.tugasTambahanEnabled !== false ? formatNumber(sumTotalTugasTambahanPoints, 1) : 0}
+            </span>
+            <span className="text-[11px] text-slate-500">Poin</span>
+          </div>
+        </div>
+
+        <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-xs">
           <span className="text-[11px] font-medium text-slate-500 block">Total Poin Dasar</span>
           <div className="flex items-baseline space-x-1 mt-1">
             <span className="text-xl font-bold font-mono text-slate-900">{formatNumber(sumTotalPoints, 1)}</span>
@@ -362,7 +413,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-xs">
+        <div className="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/30 shadow-xs">
           <span className="text-[11px] font-semibold text-emerald-800 block">Total Exit Poin</span>
           <div className="flex items-baseline space-x-1 mt-1">
             <span className="text-xl font-bold font-mono text-emerald-900">{formatNumber(sumExitPoin, 1)}</span>
@@ -370,14 +421,14 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
           </div>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-xs">
+        <div className="bg-white p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 shadow-xs">
           <span className="text-[11px] font-semibold text-emerald-800 block">Total Jaspel Alokasi</span>
           <span className="text-sm font-bold font-mono text-emerald-700 block mt-1 truncate" title={formatRupiah(sumJaspelRp)}>
             {formatRupiah(sumJaspelRp)}
           </span>
         </div>
 
-        <div className="bg-white p-3.5 rounded-xl border border-amber-200 bg-amber-50/40 shadow-xs">
+        <div className="bg-white p-3 rounded-xl border border-amber-200 bg-amber-50/40 shadow-xs">
           <span className="text-[11px] font-semibold text-amber-800 block">Total PFK BPJS Dasar</span>
           <span className="text-sm font-bold font-mono text-amber-700 block mt-1 truncate" title={formatRupiah(sumPfkRp)}>
             {formatRupiah(sumPfkRp)}
@@ -498,6 +549,14 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
                 </th>
                 <th rowSpan={2} className="border border-slate-400 px-2 py-2 text-center w-20 bg-slate-50">
                   RANGKAP TUGAS ADMIN
+                </th>
+                <th rowSpan={2} className={`border border-slate-400 px-2 py-2 text-center w-24 ${
+                  poinConfig.tugasTambahanEnabled !== false ? 'bg-purple-100/80 text-purple-950 font-bold' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  TUGAS TAMBAHAN (KEL. 7)
+                  <span className="block text-[8.5px] font-normal mt-0.5">
+                    {poinConfig.tugasTambahanEnabled !== false ? '● Aktif' : '○ Nonaktif'}
+                  </span>
                 </th>
                 {/* TANGGUNG JAWAB PROGRAM: Super header covering PJ PROG, PROGRAM 1, TAMBAHAN 1..4 & TOTAL PROG */}
                 <th colSpan={7} className="border border-slate-400 py-1.5 px-1 text-center bg-teal-100 text-teal-950 font-black tracking-wide">
@@ -842,8 +901,8 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
                   Belum ada data pemegang program yang tercatat pada Master Karyawan.
                 </div>
               ) : (
-                programHoldersSummary.map(([progName, holders]) => (
-                  <div key={progName} className="pt-3 first:pt-0">
+                programHoldersSummary.map(([progName, holders], idx) => (
+                  <div key={`${progName}-${idx}`} className="pt-3 first:pt-0">
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="text-xs font-bold text-teal-900 bg-teal-50 px-2 py-0.5 rounded border border-teal-200">
                         {progName}

@@ -3,8 +3,23 @@ import {
   PoinJaspelConfig,
   MasaKerjaRule,
   HitungPoinRow,
-  EmployeeStatus
+  EmployeeStatus,
+  CustomPoinItem
 } from '../types/jaspel';
+
+/**
+ * Daftar Baku Tugas Administrasi Tambahan (Kelompok 7)
+ */
+export const DEFAULT_TUGAS_TAMBAHAN_LIST: CustomPoinItem[] = [
+  { id: 'tt-1', nama: 'Tim Pengelola BOK Puskesmas', poin: 10, keterangan: 'Pengelolaan anggaran & SPJ program BOK' },
+  { id: 'tt-2', nama: 'Tim Akreditasi Puskesmas', poin: 15, keterangan: 'Persiapan & pemenuhan instrumen survei akreditasi' },
+  { id: 'tt-3', nama: 'Tim Penanganan Pengaduan / Keluhan', poin: 5, keterangan: 'Tindak lanjut dan respon kotak saran & komplain' },
+  { id: 'tt-4', nama: 'Tim Audit Internal (AI)', poin: 7.5, keterangan: 'Audit berkala kepatuhan SOP mutu puskesmas' },
+  { id: 'tt-5', nama: 'Tim Keselamatan Pasien (KP)', poin: 7.5, keterangan: 'Manajemen risiko dan pelaporan IKP' },
+  { id: 'tt-6', nama: 'Tim PPI (Pencegahan & Pengendalian Infeksi)', poin: 7.5, keterangan: 'Penerapan standar kewaspadaan isolasi & APD' },
+  { id: 'tt-7', nama: 'Tim K3 Puskesmas', poin: 5, keterangan: 'Keselamatan & kesehatan lingkungan kerja' },
+  { id: 'tt-8', nama: 'Tim Sistem Informasi Puskesmas (SIP)', poin: 5, keterangan: 'Pengelolaan data bridging & pelaporan digital' },
+];
 
 /**
  * Default Konfigurasi Poin Jaspel Persis Sesuai Sheet POIN DASAR Excel AJP
@@ -65,6 +80,9 @@ export const DEFAULT_POIN_JASPEL: PoinJaspelConfig = {
   progKesorga: 2,
   progIndra: 2,
   progKesKerja: 2,
+  progPoliUmum: 10, // Nilai default Poli Umum (10 Poin)
+  progUgd: 15, // Nilai default UGD (50% dokter, 50% petugas lain)
+  progRawatInap: 10,
   poinPjProgramStandar: 5,
   poinProg1Standar: 5,
   poinProg2Standar: 3,
@@ -85,6 +103,15 @@ export const DEFAULT_POIN_JASPEL: PoinJaspelConfig = {
   kinerjaCukup: 95,
   kinerjaKurang: 92.5,
   kinerjaSangatKurang: 90,
+
+  // 7. Tugas Administrasi Tambahan
+  tugasTambahanEnabled: true,
+  customTugasTambahanList: DEFAULT_TUGAS_TAMBAHAN_LIST,
+
+  // Pengaturan Terkait Pembagian Nilai Poin Bersama
+  enableSharedPointDivision: true,
+  ugdDokterPercent: 50,
+  ugdPetugasPercent: 50,
 };
 
 /**
@@ -278,9 +305,10 @@ export function resolveProgramPoints(
   if (p.includes('kesorga') || p.includes('olahraga')) return cfg.progKesorga;
   if (p.includes('indra') || p.includes('mata')) return cfg.progIndra;
   if (p.includes('kes kerja') || p.includes('kesehatan kerja')) return cfg.progKesKerja;
+  if (p.includes('poli umum') || p === 'poli') return cfg.progPoliUmum ?? 10;
+  if (p.includes('ugd') || p.includes('gawat darurat') || p.includes('igd')) return cfg.progUgd ?? 15;
+  if (p.includes('rawat inap')) return cfg.progRawatInap ?? 10;
   if (p.includes('manajemen')) return 40;
-  if (p.includes('rawat inap')) return 4.5;
-  if (p.includes('poli')) return 0.9;
   if (p.includes('posyandu')) return 2.5;
 
   // Default fallback if program name exists
@@ -334,6 +362,9 @@ export function getPoinRangkapTugas(emp: Employee, config: PoinJaspelConfig): nu
  */
 export function getAllAvailablePrograms(config: PoinJaspelConfig): { nama: string; poin: number; isCustom?: boolean }[] {
   const standards = [
+    { nama: 'Poli Umum', poin: config.progPoliUmum ?? 10 },
+    { nama: 'UGD (Gawat Darurat)', poin: config.progUgd ?? 15 },
+    { nama: 'Pelayanan Rawat Inap', poin: config.progRawatInap ?? 10 },
     { nama: 'Promkes', poin: config.progPromkes },
     { nama: 'Kesehatan Lingkungan', poin: config.progKesling },
     { nama: 'KIA', poin: config.progKia },
@@ -402,7 +433,321 @@ export function getAllAvailableTugas(config: PoinJaspelConfig): { nama: string; 
 }
 
 /**
+ * Daftar seluruh tugas administrasi tambahan (Kelompok 7)
+ */
+export function getAllAvailableTugasTambahan(config: PoinJaspelConfig): { nama: string; poin: number; isCustom?: boolean }[] {
+  const list = config.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST;
+  return list.map((item) => ({
+    nama: item.nama,
+    poin: item.poin,
+    isCustom: true,
+  }));
+}
+
+/**
+ * Deteksi profesi Dokter untuk pembagian proporsional UGD 50%
+ */
+export function isDoctorEmployee(emp: Employee): boolean {
+  const j = (emp.jabatan || '').toLowerCase();
+  const n = (emp.name || '').toLowerCase();
+  const p = (emp.pendidikan || '').toLowerCase();
+  return (
+    j.includes('dokter') ||
+    n.startsWith('dr.') ||
+    n.startsWith('drg.') ||
+    n.includes('dr.') ||
+    n.includes('drg.') ||
+    p.includes('dokter') ||
+    p.includes('profesi dokter')
+  );
+}
+
+/**
+ * Deteksi apakah program termasuk kategori UGD / Gawat Darurat
+ */
+export function isUgdProgram(name?: string): boolean {
+  if (!name || name === '-' || !name.trim()) return false;
+  const n = name.toLowerCase().trim();
+  return n === 'ugd' || n.includes('ugd') || n.includes('gawat darurat') || n.includes('igd');
+}
+
+/**
+ * Hitung poin dasar tugas administrasi tambahan (Kelompok 7)
+ * Memperhatikan switch aktivasi kelompok 7 (tugasTambahanEnabled)
+ */
+export function getPoinTugasTambahan(
+  emp: Employee,
+  config: PoinJaspelConfig,
+  customPoin?: number
+): { poin: number; nama: string; isActive: boolean } {
+  const isEnabled = config.tugasTambahanEnabled !== false;
+  if (!isEnabled) {
+    return {
+      poin: 0,
+      nama: emp.tugasTambahan || '-',
+      isActive: false,
+    };
+  }
+
+  const t = (emp.tugasTambahan || '').toLowerCase().trim();
+  if (!t || t === '-') {
+    return { poin: 0, nama: '-', isActive: true };
+  }
+
+  if (customPoin !== undefined && customPoin !== null && !isNaN(customPoin) && customPoin > 0) {
+    return { poin: customPoin, nama: emp.tugasTambahan!, isActive: true };
+  }
+
+  const list = config.customTugasTambahanList || DEFAULT_TUGAS_TAMBAHAN_LIST;
+  const match = list.find((item) => {
+    const itemNama = item.nama.toLowerCase().trim();
+    return itemNama === t || t.includes(itemNama) || itemNama.includes(t);
+  });
+
+  if (match) {
+    return { poin: match.poin, nama: match.nama, isActive: true };
+  }
+
+  return { poin: 5, nama: emp.tugasTambahan!, isActive: true };
+}
+
+export interface SharedRoleBreakdownItem {
+  roleName: string;
+  groupType: 'program' | 'tugasAdmin' | 'tugasTambahan';
+  originalPoint: number;
+  finalPoint: number;
+  userCount: number;
+  isUgd?: boolean;
+  ugdRole?: 'dokter' | 'petugas';
+  note?: string;
+}
+
+export interface SharedPointsContext {
+  isDivisionEnabled: boolean;
+  programShareMap: Map<string, {
+    originalName: string;
+    totalUsers: number;
+    pointPerPerson: number;
+    isUgd: boolean;
+    doctorCount: number;
+    staffCount: number;
+    doctorPoint: number;
+    staffPoint: number;
+    originalPoint: number;
+  }>;
+  tugasAdminShareMap: Map<string, {
+    originalName: string;
+    totalUsers: number;
+    pointPerPerson: number;
+    originalPoint: number;
+  }>;
+  tugasTambahanShareMap: Map<string, {
+    originalName: string;
+    totalUsers: number;
+    pointPerPerson: number;
+    originalPoint: number;
+    isActive: boolean;
+  }>;
+}
+
+/**
+ * Engine Pembagian Poin Bersama (Shared Points)
+ * Mengatur:
+ * 1. Program & Pelayanan bersama: Poin dibagi rata sebanyak jumlah pegawai pemegang program (kecuali UGD)
+ * 2. UGD: 50% untuk dokter (dibagi rata jumlah dokter), 50% untuk petugas lain (perawat, analis, bidan)
+ * 3. Rangkap Tugas Administrasi bersama: Poin dibagi rata
+ * 4. Tugas Administrasi Tambahan (Kelompok 7): Poin dibagi rata jika aktif, 0 jika nonaktif
+ */
+export function buildSharedPointsContext(
+  allEmployees: Employee[],
+  config: PoinJaspelConfig
+): SharedPointsContext {
+  const isDivisionEnabled = config.enableSharedPointDivision !== false;
+  const isTugasTambahanEnabled = config.tugasTambahanEnabled !== false;
+
+  const programUserMap = new Map<string, { originalName: string; employees: Employee[] }>();
+  const tugasAdminUserMap = new Map<string, { originalName: string; employees: Employee[] }>();
+  const tugasTambahanUserMap = new Map<string, { originalName: string; employees: Employee[] }>();
+
+  if (allEmployees && allEmployees.length > 0) {
+    allEmployees.forEach((emp) => {
+      // Kumpulkan Program (deduplikasi per pegawai)
+      const empPrograms = [
+        emp.pjProgramName,
+        emp.program1,
+        emp.program2,
+        emp.program3,
+        emp.program4,
+        emp.program5,
+      ].filter((p): p is string => Boolean(p && p !== '-' && p.trim() !== ''));
+
+      const seenInEmp = new Set<string>();
+      empPrograms.forEach((pName) => {
+        const key = pName.toLowerCase().trim();
+        if (!seenInEmp.has(key)) {
+          seenInEmp.add(key);
+          const current = programUserMap.get(key) || { originalName: pName.trim(), employees: [] };
+          current.employees.push(emp);
+          programUserMap.set(key, current);
+        }
+      });
+
+      // Kumpulkan Rangkap Tugas Admin
+      if (emp.tugasAdmin && emp.tugasAdmin !== '-' && emp.tugasAdmin.trim() !== '') {
+        const key = emp.tugasAdmin.toLowerCase().trim();
+        const current = tugasAdminUserMap.get(key) || { originalName: emp.tugasAdmin.trim(), employees: [] };
+        current.employees.push(emp);
+        tugasAdminUserMap.set(key, current);
+      }
+
+      // Kumpulkan Tugas Administrasi Tambahan (Kelompok 7)
+      if (emp.tugasTambahan && emp.tugasTambahan !== '-' && emp.tugasTambahan.trim() !== '') {
+        const key = emp.tugasTambahan.toLowerCase().trim();
+        const current = tugasTambahanUserMap.get(key) || { originalName: emp.tugasTambahan.trim(), employees: [] };
+        current.employees.push(emp);
+        tugasTambahanUserMap.set(key, current);
+      }
+    });
+  }
+
+  // 1. Proses Program & Pelayanan (Termasuk Aturan Khusus UGD)
+  const programShareMap = new Map<string, {
+    originalName: string;
+    totalUsers: number;
+    pointPerPerson: number;
+    isUgd: boolean;
+    doctorCount: number;
+    staffCount: number;
+    doctorPoint: number;
+    staffPoint: number;
+    originalPoint: number;
+  }>();
+
+  programUserMap.forEach(({ originalName, employees: users }, key) => {
+    const isUgd = isUgdProgram(originalName);
+    const rawPoint = resolveProgramPoints(originalName, undefined, config);
+
+    if (isUgd) {
+      const doctors = users.filter((u) => isDoctorEmployee(u));
+      const staff = users.filter((u) => !isDoctorEmployee(u));
+      const doctorCount = doctors.length;
+      const staffCount = staff.length;
+      const totalUsers = users.length;
+
+      const ugdPoint = config.progUgd !== undefined ? config.progUgd : (rawPoint > 0 ? rawPoint : 15);
+      const docPercent = (config.ugdDokterPercent !== undefined ? config.ugdDokterPercent : 50) / 100;
+      const staffPercent = (config.ugdPetugasPercent !== undefined ? config.ugdPetugasPercent : 50) / 100;
+
+      const docPool = ugdPoint * docPercent;
+      const staffPool = ugdPoint * staffPercent;
+
+      let doctorPoint = 0;
+      let staffPoint = 0;
+
+      if (isDivisionEnabled) {
+        doctorPoint = doctorCount > 0 ? Number((docPool / doctorCount).toFixed(2)) : 0;
+        staffPoint = staffCount > 0 ? Number((staffPool / staffCount).toFixed(2)) : 0;
+      } else {
+        doctorPoint = Number(docPool.toFixed(2));
+        staffPoint = Number(staffPool.toFixed(2));
+      }
+
+      programShareMap.set(key, {
+        originalName,
+        totalUsers,
+        pointPerPerson: totalUsers > 0 ? Number((ugdPoint / totalUsers).toFixed(2)) : ugdPoint,
+        isUgd: true,
+        doctorCount,
+        staffCount,
+        doctorPoint,
+        staffPoint,
+        originalPoint: ugdPoint,
+      });
+    } else {
+      const totalUsers = users.length;
+      const basePoint = rawPoint;
+      const pointPerPerson = (isDivisionEnabled && totalUsers > 1)
+        ? Number((basePoint / totalUsers).toFixed(2))
+        : basePoint;
+
+      programShareMap.set(key, {
+        originalName,
+        totalUsers,
+        pointPerPerson,
+        isUgd: false,
+        doctorCount: 0,
+        staffCount: 0,
+        doctorPoint: pointPerPerson,
+        staffPoint: pointPerPerson,
+        originalPoint: basePoint,
+      });
+    }
+  });
+
+  // 2. Proses Rangkap Tugas Administrasi
+  const tugasAdminShareMap = new Map<string, {
+    originalName: string;
+    totalUsers: number;
+    pointPerPerson: number;
+    originalPoint: number;
+  }>();
+
+  tugasAdminUserMap.forEach(({ originalName, employees: users }, key) => {
+    const totalUsers = users.length;
+    const basePoint = getPoinRangkapTugas(users[0], config);
+    const pointPerPerson = (isDivisionEnabled && totalUsers > 1)
+      ? Number((basePoint / totalUsers).toFixed(2))
+      : basePoint;
+
+    tugasAdminShareMap.set(key, {
+      originalName,
+      totalUsers,
+      pointPerPerson,
+      originalPoint: basePoint,
+    });
+  });
+
+  // 3. Proses Tugas Administrasi Tambahan (Kelompok 7)
+  const tugasTambahanShareMap = new Map<string, {
+    originalName: string;
+    totalUsers: number;
+    pointPerPerson: number;
+    originalPoint: number;
+    isActive: boolean;
+  }>();
+
+  tugasTambahanUserMap.forEach(({ originalName, employees: users }, key) => {
+    const totalUsers = users.length;
+    const rawRes = getPoinTugasTambahan(users[0], config);
+    const basePoint = rawRes.poin;
+
+    let pointPerPerson = 0;
+    if (isTugasTambahanEnabled) {
+      pointPerPerson = (isDivisionEnabled && totalUsers > 1)
+        ? Number((basePoint / totalUsers).toFixed(2))
+        : basePoint;
+    }
+
+    tugasTambahanShareMap.set(key, {
+      originalName,
+      totalUsers,
+      pointPerPerson,
+      originalPoint: basePoint,
+      isActive: isTugasTambahanEnabled,
+    });
+  });
+
+  return {
+    isDivisionEnabled,
+    programShareMap,
+    tugasAdminShareMap,
+    tugasTambahanShareMap,
+  };
+}
+
+/**
  * Evaluasi 1 Baris Hitung Poin Lengkap Persis Sesuai Excel
+ * Mendukung Pembagian Nilai Poin Bersama & Kelompok 7 (Tugas Administrasi Tambahan)
  */
 export function evaluateHitungPoinRow(
   emp: Employee,
@@ -412,21 +757,134 @@ export function evaluateHitungPoinRow(
   totalAlokasi: number = 0,
   totalExitPoin: number = 1,
   totalBasePoin: number = 1,
-  referenceDateStr?: string
+  referenceDateStr?: string,
+  allEmployees?: Employee[],
+  precomputedSharedContext?: SharedPointsContext
 ): HitungPoinRow {
   const mk = calculateMasaKerjaDetail(emp.tmt, referenceDateStr);
 
+  const sharedContext = precomputedSharedContext || (allEmployees ? buildSharedPointsContext(allEmployees, config) : undefined);
+  const isDoctor = isDoctorEmployee(emp);
+
   const poinKetenagaan = getPoinIjazah(emp, config);
   const poinMasaKerja = getPoinMasaKerja(mk.years);
-  const poinRangkapTugas = getPoinRangkapTugas(emp, config);
 
-  // Detail program pemegang program (PJ Program, Program 1 s/d 5)
-  const poinPjProg = resolveProgramPoints(emp.pjProgramName, emp.pjProgramPoin, config, config.poinPjProgramStandar ?? 5);
-  const poinProg1 = resolveProgramPoints(emp.program1, emp.program1Poin, config, config.poinProg1Standar ?? 5);
-  const poinProg2 = resolveProgramPoints(emp.program2, emp.program2Poin, config, config.poinProg2Standar ?? 3);
-  const poinProg3 = resolveProgramPoints(emp.program3, emp.program3Poin, config, config.poinProg3Standar ?? 2.5);
-  const poinProg4 = resolveProgramPoints(emp.program4, emp.program4Poin, config, config.poinProg4Standar ?? 2);
-  const poinProg5 = resolveProgramPoints(emp.program5, emp.program5Poin, config, config.poinProg5Standar ?? 2);
+  const sharedBreakdown: SharedRoleBreakdownItem[] = [];
+
+  // 2. Rangkap Tugas Administrasi (Kelompok 3)
+  let poinRangkapTugas = getPoinRangkapTugas(emp, config);
+  if (emp.poinRangkapTugasCustom !== undefined) {
+    poinRangkapTugas = emp.poinRangkapTugasCustom;
+  } else if (sharedContext && emp.tugasAdmin && emp.tugasAdmin !== '-') {
+    const adminKey = emp.tugasAdmin.toLowerCase().trim();
+    const adminShare = sharedContext.tugasAdminShareMap.get(adminKey);
+    if (adminShare) {
+      poinRangkapTugas = adminShare.pointPerPerson;
+      if (adminShare.totalUsers > 1 && sharedContext.isDivisionEnabled) {
+        sharedBreakdown.push({
+          roleName: adminShare.originalName,
+          groupType: 'tugasAdmin',
+          originalPoint: adminShare.originalPoint,
+          finalPoint: adminShare.pointPerPerson,
+          userCount: adminShare.totalUsers,
+          note: `Dibagi ${adminShare.totalUsers} orang (${adminShare.originalPoint} / ${adminShare.totalUsers})`,
+        });
+      }
+    }
+  }
+
+  // 7. Tugas Administrasi Tambahan (Kelompok 7)
+  let poinTugasTambahan = 0;
+  let namaTugasTambahan = emp.tugasTambahan || '-';
+  const isTugasTambahanActive = config.tugasTambahanEnabled !== false;
+
+  if (isTugasTambahanActive && emp.tugasTambahan && emp.tugasTambahan !== '-') {
+    if (emp.poinTugasTambahanCustom !== undefined) {
+      poinTugasTambahan = emp.poinTugasTambahanCustom;
+    } else if (sharedContext) {
+      const ttKey = emp.tugasTambahan.toLowerCase().trim();
+      const ttShare = sharedContext.tugasTambahanShareMap.get(ttKey);
+      if (ttShare) {
+        poinTugasTambahan = ttShare.pointPerPerson;
+        namaTugasTambahan = ttShare.originalName;
+        if (ttShare.totalUsers > 1 && sharedContext.isDivisionEnabled) {
+          sharedBreakdown.push({
+            roleName: ttShare.originalName,
+            groupType: 'tugasTambahan',
+            originalPoint: ttShare.originalPoint,
+            finalPoint: ttShare.pointPerPerson,
+            userCount: ttShare.totalUsers,
+            note: `Dibagi ${ttShare.totalUsers} orang (${ttShare.originalPoint} / ${ttShare.totalUsers})`,
+          });
+        }
+      } else {
+        const rawTt = getPoinTugasTambahan(emp, config);
+        poinTugasTambahan = rawTt.poin;
+        namaTugasTambahan = rawTt.nama;
+      }
+    } else {
+      const rawTt = getPoinTugasTambahan(emp, config);
+      poinTugasTambahan = rawTt.poin;
+      namaTugasTambahan = rawTt.nama;
+    }
+  } else {
+    poinTugasTambahan = 0;
+    namaTugasTambahan = emp.tugasTambahan || '-';
+  }
+
+  // Evaluasi Slot Program & Pelayanan (Kelompok 4) dengan Aturan Pembagian & UGD
+  const evalSlot = (slotName?: string, customPoin?: number, fallback?: number): number => {
+    if (!slotName || slotName === '-' || !slotName.trim()) return 0;
+    if (customPoin !== undefined && customPoin !== null && !isNaN(customPoin) && customPoin > 0) {
+      return customPoin;
+    }
+
+    if (sharedContext) {
+      const pKey = slotName.toLowerCase().trim();
+      const pShare = sharedContext.programShareMap.get(pKey);
+      if (pShare) {
+        if (pShare.isUgd) {
+          const finalVal = isDoctor ? pShare.doctorPoint : pShare.staffPoint;
+          const userCount = isDoctor ? pShare.doctorCount : pShare.staffCount;
+          sharedBreakdown.push({
+            roleName: pShare.originalName,
+            groupType: 'program',
+            originalPoint: pShare.originalPoint,
+            finalPoint: finalVal,
+            userCount,
+            isUgd: true,
+            ugdRole: isDoctor ? 'dokter' : 'petugas',
+            note: isDoctor 
+              ? `UGD 50% dokter (${pShare.originalPoint * 0.5} poin dibagi ${userCount} dokter)`
+              : `UGD 50% petugas lain (${pShare.originalPoint * 0.5} poin dibagi ${userCount} petugas)`,
+          });
+          return finalVal;
+        } else {
+          const finalVal = pShare.pointPerPerson;
+          if (pShare.totalUsers > 1 && sharedContext.isDivisionEnabled) {
+            sharedBreakdown.push({
+              roleName: pShare.originalName,
+              groupType: 'program',
+              originalPoint: pShare.originalPoint,
+              finalPoint: finalVal,
+              userCount: pShare.totalUsers,
+              note: `Dibagi ${pShare.totalUsers} orang (${pShare.originalPoint} / ${pShare.totalUsers})`,
+            });
+          }
+          return finalVal;
+        }
+      }
+    }
+
+    return resolveProgramPoints(slotName, customPoin, config, fallback);
+  };
+
+  const poinPjProg = evalSlot(emp.pjProgramName, emp.pjProgramPoin, config.poinPjProgramStandar ?? 5);
+  const poinProg1 = evalSlot(emp.program1, emp.program1Poin, config.poinProg1Standar ?? 5);
+  const poinProg2 = evalSlot(emp.program2, emp.program2Poin, config.poinProg2Standar ?? 3);
+  const poinProg3 = evalSlot(emp.program3, emp.program3Poin, config.poinProg3Standar ?? 2.5);
+  const poinProg4 = evalSlot(emp.program4, emp.program4Poin, config.poinProg4Standar ?? 2);
+  const poinProg5 = evalSlot(emp.program5, emp.program5Poin, config.poinProg5Standar ?? 2);
   const poinProgTambahanTotal = Number((poinPjProg + poinProg1 + poinProg2 + poinProg3 + poinProg4 + poinProg5).toFixed(2));
 
   // Status Kepegawaian (PNS, PPPK, Honorer)
@@ -439,8 +897,8 @@ export function evaluateHitungPoinRow(
     statusNilai = config.statusPns ?? config.statusAsn;
   }
 
-  // TOTAL POINT = Ketenagaan + Masa Kerja + Rangkap Tugas + Tanggung Jawab Program + Status
-  const totalPoint = Number((poinKetenagaan + poinMasaKerja + poinRangkapTugas + poinProgTambahanTotal + statusNilai).toFixed(2));
+  // TOTAL POINT = Ketenagaan + Masa Kerja + Rangkap Tugas + Tugas Tambahan (Kel. 7) + Tanggung Jawab Program + Status
+  const totalPoint = Number((poinKetenagaan + poinMasaKerja + poinRangkapTugas + poinTugasTambahan + poinProgTambahanTotal + statusNilai).toFixed(2));
 
   // Kehadiran
   const presensi = emp.attendance ?? 20;
@@ -485,6 +943,9 @@ export function evaluateHitungPoinRow(
     poinKetenagaan,
     poinMasaKerja,
     poinRangkapTugas,
+    poinTugasTambahan,
+    namaTugasTambahan,
+    isTugasTambahanActive,
     poinPjProg,
     namaPjProg: emp.pjProgramName,
     poinProg1,
@@ -511,5 +972,6 @@ export function evaluateHitungPoinRow(
     jasaPelayanan,
     totalPoinTanpaKehadiran,
     pfkBpjs,
+    sharedPointBreakdown: sharedBreakdown.length > 0 ? sharedBreakdown : undefined,
   };
 }

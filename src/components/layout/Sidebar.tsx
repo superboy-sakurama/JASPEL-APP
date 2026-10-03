@@ -30,6 +30,7 @@ export type AppMenuId =
   | 'hitung-poin'
   | 'balancing'
   | 'kwitansi'
+  | 'pfk-bpjs'
   | 'history'
   | 'code'
   | 'vercel';
@@ -289,6 +290,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center space-x-2.5">
               <Receipt className={`w-4 h-4 ${activeMenu === 'kwitansi' ? 'text-white' : 'text-rose-400'}`} />
               <span>Kwitansi Global (Tanda Tangan)</span>
+            </div>
+          </button>
+
+          {/* 6.5 POTONGAN PFK BPJS */}
+          <button
+            type="button"
+            onClick={() => handleSelectMenu('pfk-bpjs')}
+            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all ${
+              activeMenu === 'pfk-bpjs'
+                ? 'bg-teal-600 text-white font-bold shadow-md'
+                : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+            }`}
+          >
+            <div className="flex items-center space-x-2.5">
+              <HeartPulse className={`w-4 h-4 ${activeMenu === 'pfk-bpjs' ? 'text-white' : 'text-teal-400'}`} />
+              <span>Potongan PFK BPJS</span>
             </div>
           </button>
 

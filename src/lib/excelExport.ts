@@ -204,3 +204,103 @@ export function exportKwitansiToExcel(
   const finalName = filename || `Kwitansi_Jaspel_${pejabat.namaFaskes.replace(/\s+/g, '_')}_${setup.bulan}_${setup.tahun}.xlsx`;
   XLSX.writeFile(wb, finalName);
 }
+
+/**
+ * Export Potongan PFK BPJS (Iuran 1% & 4% PNS & PPPK) ke Excel (.xlsx)
+ */
+export function exportPfkBpjsToExcel(
+  employees: CalculatedEmployee[],
+  setup: KapitasiSetup,
+  pejabat: KwitansiPejabat,
+  filename?: string
+) {
+  const wsData: (string | number)[][] = [];
+
+  wsData.push([`DINAS KESEHATAN`]);
+  wsData.push([pejabat.namaFaskes || 'UPTD PUSKESMAS']);
+  wsData.push([`DAFTAR POTONGAN PFK BPJS (IURAN 1% & 4%) PNS & PPPK - ${setup.bulan.toUpperCase()} ${setup.tahun}`]);
+  wsData.push([]);
+
+  wsData.push([
+    'No',
+    'Nama Pegawai',
+    'NIP (Nomor Induk Pegawai)',
+    'Status',
+    'Tunjangan Jasa Layanan Medis',
+    'Total Take Home Pay (THP)',
+    'Dasar Perhitungan Iuran (DPI)',
+    'Iuran 1%',
+    'Iuran 4%',
+    'Total Iuran 5%'
+  ]);
+
+  let sumJasa = 0;
+  let sumThp = 0;
+  let sumDpi = 0;
+  let sumIuran1 = 0;
+  let sumIuran4 = 0;
+  let sumIuran5 = 0;
+
+  employees.forEach((emp, idx) => {
+    const jasaMedis = emp.brutoShadow !== undefined ? emp.brutoShadow : (emp.brutoRaw || 0);
+    const thp = emp.netto !== undefined ? emp.netto : (emp.brutoRaw || 0);
+    const dpi = jasaMedis;
+    const i1 = emp.fpk1 > 0 ? emp.fpk1 : Math.floor(dpi * 0.01);
+    const i4 = emp.fpk4 > 0 ? emp.fpk4 : Math.floor(dpi * 0.04);
+    const i5 = i1 + i4;
+
+    sumJasa += jasaMedis;
+    sumThp += thp;
+    sumDpi += dpi;
+    sumIuran1 += i1;
+    sumIuran4 += i4;
+    sumIuran5 += i5;
+
+    wsData.push([
+      idx + 1,
+      emp.name,
+      emp.nip ? `'${emp.nip}` : '-',
+      emp.status,
+      jasaMedis,
+      thp,
+      dpi,
+      i1,
+      i4,
+      i5
+    ]);
+  });
+
+  wsData.push([
+    'JUMLAH TOTAL',
+    '',
+    '',
+    '',
+    sumJasa,
+    sumThp,
+    sumDpi,
+    sumIuran1,
+    sumIuran4,
+    sumIuran5
+  ]);
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws['!cols'] = [
+    { wch: 6 },
+    { wch: 32 },
+    { wch: 22 },
+    { wch: 10 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 18 },
+    { wch: 14 },
+    { wch: 14 },
+    { wch: 16 }
+  ];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'PFK_BPJS');
+
+  const finalName = filename || `Potongan_PFK_BPJS_${setup.bulan}_${setup.tahun}.xlsx`;
+  XLSX.writeFile(wb, finalName);
+}
+

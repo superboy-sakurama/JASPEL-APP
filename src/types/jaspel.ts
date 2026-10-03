@@ -19,6 +19,10 @@ export interface Employee {
   tugasAdmin?: string; // e.g. "Kapus", "KTU", "PPTK", "Bendahara Pengeluaran", "-"
   poinRangkapTugasCustom?: number;
 
+  // 7. Tugas Administrasi Tambahan (Kelompok 7)
+  tugasTambahan?: string; // e.g. "Tim Akreditasi Puskesmas", "Tim BOK", dll.
+  poinTugasTambahanCustom?: number;
+
   // Tanggung Jawab Program (Detail pemegang program)
   pjProgramName?: string;
   pjProgramPoin?: number;
@@ -215,6 +219,9 @@ export interface PoinJaspelConfig {
   progKesorga: number;
   progIndra: number;
   progKesKerja: number;
+  progPoliUmum?: number; // Poin Poli Umum (Default: 10)
+  progUgd?: number; // Poin UGD (Default: 15 / 10)
+  progRawatInap?: number; // Poin Pelayanan Rawat Inap (Default: 10)
   // Program Tambahan Baru (Fitur Tambah Poin Program)
   customProgramList?: CustomPoinItem[];
   poinPjProgramStandar?: number;
@@ -237,6 +244,15 @@ export interface PoinJaspelConfig {
   kinerjaCukup: number;
   kinerjaKurang: number;
   kinerjaSangatKurang: number;
+
+  // 7. Tugas Administrasi Tambahan (Bisa diaktifkan/dinonaktifkan secara keseluruhan)
+  tugasTambahanEnabled: boolean; // Master toggle: Aktif / Nonaktif
+  customTugasTambahanList?: CustomPoinItem[]; // Daftar tugas tambahan kelompok 7
+
+  // Pengaturan Terkait Pembagian Nilai Poin Bersama (Shared Points)
+  enableSharedPointDivision?: boolean; // Default true: jika poin dipakai bersama, dibagi rata sebanyak pemakai
+  ugdDokterPercent?: number; // Default 50%: 50% untuk dokter
+  ugdPetugasPercent?: number; // Default 50%: 50% untuk petugas lain (perawat, analis, bidan)
 }
 
 // 1d. Prosentase Masa Kerja (Honorer / Non-ASN)
@@ -270,6 +286,11 @@ export interface HitungPoinRow {
   poinKetenagaan: number;
   poinMasaKerja: number;
   poinRangkapTugas: number;
+
+  // 7. Tugas Administrasi Tambahan (Kelompok 7)
+  poinTugasTambahan: number;
+  namaTugasTambahan?: string;
+  isTugasTambahanActive: boolean;
 
   // Tanggung Jawab Program (Detail pemegang program)
   poinPjProg: number;
@@ -316,6 +337,18 @@ export interface HitungPoinRow {
   // Perhitungan PFK BPJS
   totalPoinTanpaKehadiran: number; // TOTAL POINT x (Nilai Kinerja / 100) x (Prosentase Masa Kerja / 100)
   pfkBpjs: number; // (totalPoinTanpaKehadiran / totalBasePoin) x totalAlokasi
+
+  // Rincian Pembagian Poin Bersama
+  sharedPointBreakdown?: {
+    roleName: string;
+    groupType: 'program' | 'tugasAdmin' | 'tugasTambahan';
+    originalPoint: number;
+    finalPoint: number;
+    userCount: number;
+    isUgd?: boolean;
+    ugdRole?: 'dokter' | 'petugas';
+    note?: string;
+  }[];
 }
 
 export interface JaspelHistoryRecord {

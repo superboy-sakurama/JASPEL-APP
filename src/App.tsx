@@ -32,6 +32,7 @@ import { ProsentaseMasaKerjaView } from './components/settings/ProsentaseMasaKer
 import { HitungPoinView } from './components/HitungPoinView';
 import { JaspelTable } from './components/JaspelTable';
 import { KwitansiGlobalView } from './components/KwitansiGlobalView';
+import { PfkBpjsView } from './components/PfkBpjsView';
 import { HistoryJaspelView } from './components/HistoryJaspelView';
 import { EmployeesManager } from './components/EmployeesManager';
 import { ImportCSV } from './components/ImportCSV';
@@ -733,6 +734,29 @@ export default function App() {
                 setPejabat(newP);
                 showToast('Data pejabat penandatangan kwitansi diperbarui!', 'success');
               }}
+              availablePeriods={availablePeriods}
+              selectedPeriodKey={selectedKwitansiPeriod}
+              isPeriodLocked={
+                selectedKwitansiPeriod === 'CURRENT'
+                  ? Boolean(historyRecords.find(r => r.bulan === setup.bulan && r.tahun === setup.tahun)?.isLocked)
+                  : Boolean(historyRecords.find(r => `${r.bulan}-${r.tahun}` === selectedKwitansiPeriod)?.isLocked)
+              }
+              onSelectPeriod={(b, t) => {
+                if (b === setup.bulan && t === setup.tahun) {
+                  setSelectedKwitansiPeriod('CURRENT');
+                } else {
+                  setSelectedKwitansiPeriod(`${b}-${t}`);
+                }
+              }}
+            />
+          )}
+
+          {/* POTONGAN PFK BPJS */}
+          {activeMenu === 'pfk-bpjs' && (
+            <PfkBpjsView
+              employees={kwitansiData.employees}
+              setup={kwitansiData.setup}
+              pejabat={pejabat}
               availablePeriods={availablePeriods}
               selectedPeriodKey={selectedKwitansiPeriod}
               isPeriodLocked={

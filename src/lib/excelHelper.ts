@@ -299,3 +299,67 @@ export function downloadHitungPoinExcel(
     colWidths
   );
 }
+
+/**
+ * Robustly parse Excel date values (Serial numbers, JS Date objects, formatted strings, year strings) into 'YYYY-MM-DD'
+ */
+export function parseExcelDate(rawVal: any): string {
+  if (rawVal === undefined || rawVal === null || rawVal === '') {
+    return '2020-01-01';
+  }
+  if (rawVal instanceof Date) {
+    if (!isNaN(rawVal.getTime())) {
+      return rawVal.toISOString().split('T')[0];
+    }
+  }
+  if (typeof rawVal === 'number') {
+    // Excel serial number (days since Dec 30 1899)
+    const jsDate = new Date(Math.round((rawVal - (25567 + 2)) * 86400 * 1000));
+    if (!isNaN(jsDate.getTime())) {
+      return jsDate.toISOString().split('T')[0];
+    }
+  }
+  const str = String(rawVal).trim();
+  if (!str) return '2020-01-01';
+
+  // Check if 4 digit year
+  if (/^\d{4}$/.test(str)) {
+    return `${str}-01-01`;
+  }
+
+  // Check if numeric string representing Excel serial number
+  if (!isNaN(Number(str)) && Number(str) > 10000) {
+    const num = Number(str);
+    const jsDate = new Date(Math.round((num - (25567 + 2)) * 86400 * 1000));
+    if (!isNaN(jsDate.getTime())) {
+      return jsDate.toISOString().split('T')[0];
+    }
+  }
+
+  // Normalize slashes to dashes
+  let normalized = str.replace(/\//g, '-');
+  const parts = normalized.split('-');
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD
+      const y = parts[0];
+      const m = parts[1].padStart(2, '0');
+      const d = parts[2].padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    } else if (parts[2].length === 4) {
+      // DD-MM-YYYY or MM-DD-YYYY
+      const d = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      const y = parts[2];
+      return `${y}-${m}-${d}`;
+    }
+  }
+
+  const parsed = new Date(str);
+  if (!isNaN(parsed.getTime())) {
+    return parsed.toISOString().split('T')[0];
+  }
+
+  return '2020-01-01';
+}
+
