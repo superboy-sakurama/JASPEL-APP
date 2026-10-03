@@ -430,27 +430,32 @@ export default function App() {
 
   // Handler apply attendance dari CSV
   const handleApplyAttendance = (records: AttendanceImportRow[]) => {
-    const recordMap = new Map<string, number>();
+    const recordMap = new Map<string, { attendance: number; kinerjaUraian?: string }>();
     records.forEach((r) => {
       if (r.nip && r.nip !== '-') {
-        recordMap.set(r.nip.replace(/[^0-9]/g, ''), r.attendance);
+        recordMap.set(r.nip.replace(/[^0-9]/g, ''), { attendance: r.attendance, kinerjaUraian: r.kinerjaUraian });
       }
-      recordMap.set(r.name.toLowerCase().trim(), r.attendance);
+      recordMap.set(r.name.toLowerCase().trim(), { attendance: r.attendance, kinerjaUraian: r.kinerjaUraian });
     });
 
     const updated = employees.map((emp) => {
       const cleanNip = emp.nip.replace(/[^0-9]/g, '');
       const matchByNip = cleanNip ? recordMap.get(cleanNip) : undefined;
       const matchByName = recordMap.get(emp.name.toLowerCase().trim());
-      const matchAtt = matchByNip !== undefined ? matchByNip : matchByName;
-      if (matchAtt !== undefined) {
-        return { ...emp, attendance: Number(matchAtt), maxAttendance: setup.maxAttendance };
+      const match = matchByNip !== undefined ? matchByNip : matchByName;
+      if (match !== undefined) {
+        return { 
+          ...emp, 
+          attendance: Number(match.attendance), 
+          maxAttendance: setup.maxAttendance,
+          ...(match.kinerjaUraian ? { kinerjaUraian: match.kinerjaUraian as any } : {})
+        };
       }
       return emp;
     });
 
     setEmployees(updated);
-    showToast(`Kehadiran ${records.length} pegawai berhasil diterapkan ke kalkulasi Jaspel!`, 'success');
+    showToast(`Kehadiran dan variabel kinerja ${records.length} pegawai berhasil diterapkan ke kalkulasi Jaspel!`, 'success');
   };
 
   // Employee CRUD Handlers

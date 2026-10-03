@@ -136,7 +136,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
   // Aggregate Metrics
   const totalPegawai = calculatedRows.length;
   const sumTotalPoints = calculatedRows.reduce((s, r) => s + r.totalPoint, 0);
-  const sumTotalProgramPoints = calculatedRows.reduce((s, r) => s + r.poinProgTambahanTotal, 0);
+  const sumTotalProgramPoints = calculatedRows.reduce((s, r) => s + r.totalProgram, 0);
   const sumTotalTugasTambahanPoints = calculatedRows.reduce((s, r) => s + (r.poinTugasTambahan || 0), 0);
   const sumPoinKehadiran = calculatedRows.reduce((s, r) => s + r.poinKehadiran, 0);
   const sumPoinKinerja = calculatedRows.reduce((s, r) => s + r.poinKinerja, 0);
@@ -541,22 +541,8 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
                 <th colSpan={3} className="border border-slate-400 py-1 px-1 text-center bg-yellow-100/70 text-slate-900">
                   VARIABEL KEHADIRAN
                 </th>
-                <th rowSpan={2} className="border border-slate-400 px-2 py-2 text-center w-18 bg-slate-50">
-                  JENIS KETENAGAAN
-                </th>
-                <th rowSpan={2} className="border border-slate-400 px-2 py-2 text-center w-14 bg-slate-50">
-                  MASA KERJA
-                </th>
-                <th rowSpan={2} className="border border-slate-400 px-2 py-2 text-center w-20 bg-slate-50">
-                  RANGKAP TUGAS ADMIN
-                </th>
-                <th rowSpan={2} className={`border border-slate-400 px-2 py-2 text-center w-24 ${
-                  poinConfig.tugasTambahanEnabled !== false ? 'bg-purple-100/80 text-purple-950 font-bold' : 'bg-slate-200 text-slate-500'
-                }`}>
-                  TUGAS TAMBAHAN (KEL. 7)
-                  <span className="block text-[8.5px] font-normal mt-0.5">
-                    {poinConfig.tugasTambahanEnabled !== false ? '● Aktif' : '○ Nonaktif'}
-                  </span>
+                <th colSpan={4} className="border border-slate-400 py-1 px-1 text-center bg-slate-100 font-bold">
+                  VARIABEL NILAI
                 </th>
                 {/* TANGGUNG JAWAB PROGRAM: Super header covering PJ PROG, PROGRAM 1, TAMBAHAN 1..4 & TOTAL PROG */}
                 <th colSpan={7} className="border border-slate-400 py-1.5 px-1 text-center bg-teal-100 text-teal-950 font-black tracking-wide">
@@ -604,6 +590,19 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
                 <th className="border border-slate-400 px-1.5 py-1 w-12 bg-yellow-100 text-yellow-950 font-bold">PRESENSI</th>
                 <th className="border border-slate-400 px-1.5 py-1 w-12 bg-yellow-100 text-yellow-950 font-bold">HARI KERJA</th>
                 <th className="border border-slate-400 px-1.5 py-1 w-14 bg-yellow-100 text-yellow-950 font-bold">PROSENTASE (%)</th>
+
+                {/* Variabel Nilai */}
+                <th className="border border-slate-400 px-1.5 py-1 w-18 bg-slate-50 font-semibold">JENIS KETENAGAAN</th>
+                <th className="border border-slate-400 px-1.5 py-1 w-14 bg-slate-50 font-semibold">MASA KERJA</th>
+                <th className="border border-slate-400 px-1.5 py-1 w-20 bg-slate-50 font-semibold">RANGKAP TUGAS ADMIN</th>
+                <th className={`border border-slate-400 px-1.5 py-1 w-24 ${
+                  poinConfig.tugasTambahanEnabled !== false ? 'bg-purple-100/80 text-purple-950 font-bold' : 'bg-slate-200 text-slate-500'
+                }`}>
+                  TUGAS TAMBAHAN (KEL. 7)
+                  <span className="block text-[8.5px] font-normal mt-0.5">
+                    {poinConfig.tugasTambahanEnabled !== false ? '● Aktif' : '○ Nonaktif'}
+                  </span>
+                </th>
 
                 {/* Tanggung Jawab Program Sub-Columns */}
                 <th className="border border-slate-400 px-1.5 py-1 min-w-[70px] bg-teal-50 text-teal-950 font-bold">PJ PROGRAM</th>
@@ -697,6 +696,16 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
                     {r.poinRangkapTugas > 0 ? r.poinRangkapTugas : ''}
                   </td>
 
+                  {/* Tugas Tambahan (Kel. 7) */}
+                  <td className="border border-slate-300 text-center py-1 px-1 bg-purple-50/50 text-purple-950">
+                    <div className="font-mono font-bold">{r.poinTugasTambahan > 0 ? r.poinTugasTambahan : ''}</div>
+                    {showProgramNames && r.namaTugasTambahan && r.namaTugasTambahan !== '-' && (
+                      <div className="text-[9px] text-purple-800 font-medium truncate max-w-[90px] mx-auto mt-0.5 bg-purple-100/60 px-1 py-0.2 rounded" title={r.namaTugasTambahan}>
+                        {r.namaTugasTambahan}
+                      </div>
+                    )}
+                  </td>
+
                   {/* TANGGUNG JAWAB PROGRAM: Detail Pemegang Program */}
                   {/* PJ PROG */}
                   <td className="border border-slate-300 text-center py-1 px-1 bg-teal-50/40 text-teal-950">
@@ -760,7 +769,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
 
                   {/* TOTAL POIN PROGRAM */}
                   <td className="border border-slate-300 text-center font-mono font-black py-1.5 px-1 bg-teal-100/80 text-teal-950">
-                    {r.poinProgTambahanTotal > 0 ? formatNumber(r.poinProgTambahanTotal, 1) : '-'}
+                    {r.totalProgram > 0 ? formatNumber(r.totalProgram, 2) : '-'}
                   </td>
 
                   {/* Status Kepegawaian */}
@@ -831,10 +840,10 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
                 <td colSpan={2} className="border border-slate-400 px-3 py-2 text-center text-xs sticky left-0 bg-slate-200 z-30 uppercase tracking-wide">
                   TOTAL KESELURUHAN
                 </td>
-                <td colSpan={11} className="border border-slate-400 px-2 py-2 text-right text-slate-600 text-[10px]">
+                <td colSpan={13} className="border border-slate-400 px-2 py-2 text-right text-slate-600 text-[10px]">
                   REKAPITULASI:
                 </td>
-                <td colSpan={6} className="border border-slate-400"></td>
+                <td colSpan={5} className="border border-slate-400"></td>
                 <td className="border border-slate-400 text-center font-mono text-xs font-black text-teal-950 bg-teal-200">
                   {formatNumber(sumTotalProgramPoints, 2)}
                 </td>

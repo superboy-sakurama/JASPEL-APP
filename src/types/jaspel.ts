@@ -105,6 +105,7 @@ export interface AttendanceImportRow {
   nip: string;
   name: string;
   attendance: number;
+  kinerjaUraian?: string;
   bulan?: string;
   tahun?: number;
 }
@@ -306,6 +307,7 @@ export interface HitungPoinRow {
   poinProg5?: number;
   namaProg5?: string;
   poinProgTambahanTotal: number;
+  totalProgram: number;
 
   // Status Kepegawaian
   statusKepegawaian: EmployeeStatus;

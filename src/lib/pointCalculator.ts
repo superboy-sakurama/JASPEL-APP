@@ -887,6 +887,9 @@ export function evaluateHitungPoinRow(
   const poinProg5 = evalSlot(emp.program5, emp.program5Poin, config.poinProg5Standar ?? 2);
   const poinProgTambahanTotal = Number((poinPjProg + poinProg1 + poinProg2 + poinProg3 + poinProg4 + poinProg5).toFixed(2));
 
+  // TOTAL PROGRAM = Ketenagaan + Masa Kerja + Rangkap Tugas + Tugas Tambahan + Tanggung Jawab Program
+  const totalProgram = Number((poinKetenagaan + poinMasaKerja + poinRangkapTugas + poinTugasTambahan + poinProgTambahanTotal).toFixed(2));
+
   // Status Kepegawaian (PNS, PPPK, Honorer)
   let statusNilai = config.statusAsn;
   if (emp.status === 'Honorer') {
@@ -897,20 +900,36 @@ export function evaluateHitungPoinRow(
     statusNilai = config.statusPns ?? config.statusAsn;
   }
 
-  // TOTAL POINT = Ketenagaan + Masa Kerja + Rangkap Tugas + Tugas Tambahan (Kel. 7) + Tanggung Jawab Program + Status
-  const totalPoint = Number((poinKetenagaan + poinMasaKerja + poinRangkapTugas + poinTugasTambahan + poinProgTambahanTotal + statusNilai).toFixed(2));
+  // TOTAL POINT = Total Program + Status Nilai
+  const totalPoint = Number((totalProgram + statusNilai).toFixed(2));
 
-  // Kehadiran
-  const presensi = emp.attendance ?? 20;
-  const hariKerja = emp.maxAttendance || 24;
-  const prosentaseKehadiran = Math.round((presensi / hariKerja) * 100);
+  // Kehadiran (Error handling for 0 attendance and division by zero)
+  const presensi = (emp.attendance !== undefined && emp.attendance !== null && !isNaN(Number(emp.attendance))) 
+    ? Number(emp.attendance) 
+    : 20;
+  const hariKerja = (emp.maxAttendance !== undefined && emp.maxAttendance !== null && Number(emp.maxAttendance) > 0) 
+    ? Number(emp.maxAttendance) 
+    : 24;
+  const prosentaseKehadiran = hariKerja > 0 ? Number(((presensi / hariKerja) * 100).toFixed(2)) : 100;
 
   // Poin Kehadiran = (Prosentase kehadiran x JML Poin) / 100
   const poinKehadiran = Number(((prosentaseKehadiran * totalPoint) / 100).toFixed(2));
 
-  // Kinerja
+  // Kinerja (Uraian & Nilai with fallback mapping)
   const kinerjaUraian = emp.kinerjaUraian || 'Baik';
-  const kinerjaNilai = emp.kinerjaNilai ?? config.kinerjaBaik; // Default 97.5
+  let kinerjaNilai = emp.kinerjaNilai;
+  if (kinerjaNilai === undefined || kinerjaNilai === null || isNaN(Number(kinerjaNilai))) {
+    switch (kinerjaUraian) {
+      case 'Sangat Baik': kinerjaNilai = config.kinerjaSangatBaik ?? 100; break;
+      case 'Baik': kinerjaNilai = config.kinerjaBaik ?? 97.5; break;
+      case 'Cukup': kinerjaNilai = config.kinerjaCukup ?? 95; break;
+      case 'Kurang': kinerjaNilai = config.kinerjaKurang ?? 92.5; break;
+      case 'Sangat Kurang': kinerjaNilai = config.kinerjaSangatKurang ?? 90; break;
+      default: kinerjaNilai = config.kinerjaBaik ?? 97.5;
+    }
+  } else {
+    kinerjaNilai = Number(kinerjaNilai);
+  }
 
   // Poin Kinerja = (Poin Kehadiran x Nilai Kinerja) / 100
   const poinKinerja = Number(((poinKehadiran * kinerjaNilai) / 100).toFixed(2));
@@ -959,6 +978,7 @@ export function evaluateHitungPoinRow(
     poinProg5,
     namaProg5: emp.program5,
     poinProgTambahanTotal,
+    totalProgram,
     statusKepegawaian: emp.status,
     statusNilai,
     totalPoint,

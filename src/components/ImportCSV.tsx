@@ -68,6 +68,9 @@ export const ImportCSV: React.FC<ImportCSVProps> = ({
         const attIdx = headers.findIndex(
           h => h.includes('kehadiran') || h.includes('hadir') || h.includes('attendance') || h.includes('hari')
         );
+        const kinerjaIdx = headers.findIndex(
+          h => h.includes('kinerja') || h.includes('uraian') || h.includes('penilaian') || h.includes('rating')
+        );
 
         if (attIdx === -1) {
           setErrorMsg('Kolom jumlah kehadiran tidak ditemukan. Pastikan ada kolom "Jumlah_Kehadiran" atau "Kehadiran".');
@@ -101,6 +104,12 @@ export const ImportCSV: React.FC<ImportCSVProps> = ({
           const match = (cleanNip && employeeMapByNip.get(cleanNip)) ||
                         employeeMapByName.get(rawName.toLowerCase().trim());
 
+          let rawKinerja = kinerjaIdx !== -1 ? (row[kinerjaIdx] || '').trim() : '';
+          if (!rawKinerja && match) rawKinerja = match.kinerjaUraian || 'Baik';
+          if (!['Sangat Baik', 'Baik', 'Cukup', 'Kurang', 'Sangat Kurang'].includes(rawKinerja)) {
+            rawKinerja = 'Baik';
+          }
+
           if (match) {
             matched++;
           }
@@ -109,6 +118,7 @@ export const ImportCSV: React.FC<ImportCSVProps> = ({
             nip: rawNip,
             name: rawName || (match ? match.name : 'Unknown'),
             attendance: cleanAtt,
+            kinerjaUraian: rawKinerja,
             bulan,
             tahun,
           });
@@ -144,13 +154,14 @@ export const ImportCSV: React.FC<ImportCSVProps> = ({
 
   // Download Sample Template CSV
   const handleDownloadSample = () => {
-    const headers = ['Bulan', 'Tahun', 'NIP', 'Nama', 'Jumlah_Kehadiran'];
+    const headers = ['Bulan', 'Tahun', 'NIP', 'Nama', 'Jumlah_Kehadiran', 'Uraian_Kinerja'];
     const rows = employees.map(emp => [
       bulan,
       tahun,
       emp.nip,
       emp.name,
       emp.attendance || maxAttendance,
+      emp.kinerjaUraian || 'Baik',
     ]);
     downloadCSV(`Template_Absensi_${bulan}_${tahun}.csv`, headers, rows);
   };
@@ -161,6 +172,7 @@ export const ImportCSV: React.FC<ImportCSVProps> = ({
       nip: emp.nip,
       name: emp.name,
       attendance: idx === 2 ? 21 : idx === 5 ? 20 : idx === 8 ? 19 : 22,
+      kinerjaUraian: emp.kinerjaUraian || 'Baik',
       bulan,
       tahun,
     }));
