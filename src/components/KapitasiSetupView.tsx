@@ -16,7 +16,9 @@ import {
   Receipt,
   Trash2,
   CheckCircle2,
-  ArrowRight
+  ArrowRight,
+  Lock,
+  Unlock
 } from 'lucide-react';
 
 interface KapitasiSetupViewProps {
@@ -27,6 +29,7 @@ interface KapitasiSetupViewProps {
   onLoadPeriod?: (record: JaspelHistoryRecord) => void;
   onOpenKwitansiForHistory?: (record: JaspelHistoryRecord) => void;
   onDeleteHistoryRecord?: (id: string) => void;
+  onToggleLockHistory?: (id: string, lockNote?: string, officerName?: string) => void;
   onPushToGoogleSheets?: () => Promise<void>;
   isSyncingToSheets?: boolean;
 }
@@ -44,6 +47,7 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
   onLoadPeriod,
   onOpenKwitansiForHistory,
   onDeleteHistoryRecord,
+  onToggleLockHistory,
   onPushToGoogleSheets,
   isSyncingToSheets = false,
 }) => {
@@ -364,12 +368,13 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
                 <tr>
                   <th className="px-4 py-3 w-10 text-center">No</th>
                   <th className="px-4 py-3 min-w-[130px]">Periode</th>
+                  <th className="px-4 py-3 text-center">Status</th>
                   <th className="px-4 py-3 text-right">Total Kapitasi (100%)</th>
                   <th className="px-4 py-3 text-center w-24">Alokasi</th>
                   <th className="px-4 py-3 text-right">Dana Jaspel (Netto)</th>
                   <th className="px-4 py-3 text-center">Penerima</th>
                   <th className="px-4 py-3 text-center">Tgl Simpan</th>
-                  <th className="px-4 py-3 text-center w-48">Aksi</th>
+                  <th className="px-4 py-3 text-center w-52">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -381,6 +386,19 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
                         <Calendar className="w-3.5 h-3.5 text-slate-400" />
                         <span>{hist.bulan} {hist.tahun}</span>
                       </div>
+                    </td>
+                    <td className="px-4 py-3 text-center">
+                      {hist.isLocked ? (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          <Lock className="w-2.5 h-2.5 text-emerald-700" />
+                          <span>Terkunci</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                          <Unlock className="w-2.5 h-2.5 text-amber-700" />
+                          <span>Draft</span>
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right font-mono font-semibold text-slate-800">
                       {formatRupiah(hist.totalKapitasi)}
@@ -401,6 +419,21 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
                     </td>
                     <td className="px-4 py-3 text-center">
                       <div className="flex items-center justify-center space-x-1.5">
+                        {onToggleLockHistory && (
+                          <button
+                            type="button"
+                            onClick={() => onToggleLockHistory(hist.id)}
+                            className={`p-1 rounded transition-colors ${
+                              hist.isLocked
+                                ? 'text-emerald-700 hover:bg-emerald-100'
+                                : 'text-amber-700 hover:bg-amber-100'
+                            }`}
+                            title={hist.isLocked ? "Periode terkunci aman (Klik untuk buka kunci)" : "Kunci periode ini"}
+                          >
+                            {hist.isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+                          </button>
+                        )}
+
                         {onOpenKwitansiForHistory && (
                           <button
                             type="button"
@@ -429,8 +462,13 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
                           <button
                             type="button"
                             onClick={() => onDeleteHistoryRecord(hist.id)}
-                            className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded transition-colors"
-                            title="Hapus riwayat periode ini"
+                            disabled={hist.isLocked}
+                            className={`p-1 rounded transition-colors ${
+                              hist.isLocked
+                                ? 'text-slate-300 cursor-not-allowed opacity-50'
+                                : 'text-slate-400 hover:text-rose-600 hover:bg-rose-50'
+                            }`}
+                            title={hist.isLocked ? "Periode terkunci resmi dan tidak dapat dihapus" : "Hapus riwayat periode ini"}
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>

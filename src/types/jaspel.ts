@@ -90,6 +90,7 @@ export interface CalculationResult {
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
   isConfigured: boolean;
+  sheetTitle?: string;
   clientEmail?: string;
   authMethod: 'env_json' | 'env_keys' | 'base64' | 'not_set';
   sheetsFound?: string[];
@@ -337,4 +338,13 @@ export interface JaspelHistoryRecord {
   calculation: CalculationResult;
   pejabat?: KwitansiPejabat;
   savedAt: string;
+
+  // Fitur Keamanan Penguncian Data History Bulan Sebelumnya
+  isLocked: boolean; // Jika true, data bulan ini dibekukan dan kebal dari perubahan master data/poin
+  lockedAt?: string;
+  lockedBy?: string;
+  lockNote?: string;
+  employeesSnapshot?: Employee[]; // Snapshot lengkap data pegawai saat periode dikunci
+  poinConfigSnapshot?: PoinJaspelConfig; // Snapshot matriks poin saat periode dikunci
+  masaKerjaRulesSnapshot?: MasaKerjaRule[]; // Snapshot aturan masa kerja saat periode dikunci
 }

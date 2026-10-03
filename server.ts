@@ -30,17 +30,34 @@ async function startServer() {
   });
 
   // Google Sheets Status & Config Info
-  app.get('/api/sheets/config', (req, res) => {
+  app.get('/api/sheets/config', async (req, res) => {
     try {
       const creds = parseGoogleCredentials();
       const sheetId = process.env.SPREADSHEET_ID || '';
       const isConfigured = Boolean(creds && sheetId && sheetId !== 'your_google_spreadsheet_id_here');
+
+      let sheetsFound: string[] | undefined = undefined;
+      let sheetTitle: string | undefined = undefined;
+
+      if (isConfigured) {
+        try {
+          const testRes = await testGoogleSheetsConnection();
+          if (testRes.success) {
+            sheetsFound = testRes.sheets;
+            sheetTitle = testRes.title;
+          }
+        } catch (connErr: any) {
+          console.warn('Auto fetch Google Sheets tabs failed:', connErr.message);
+        }
+      }
 
       res.json({
         success: true,
         // Sembunyikan ID sebenarnya demi privasi & keamanan data instansi
         spreadsheetId: isConfigured ? '••••••••••••••••••••••••••••••••' : '',
         isConfigured,
+        sheetTitle,
+        sheetsFound,
         clientEmail: creds?.client_email ? '••••••••@serviceaccount.gserviceaccount.com' : undefined,
         authMethod: process.env.GOOGLE_SERVICE_ACCOUNT_BASE64
           ? 'base64'

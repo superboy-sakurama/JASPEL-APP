@@ -6,6 +6,7 @@ import {
   InstansiConfig 
 } from '../types/jaspel';
 import { calculateJaspel } from '../lib/calculateJaspel';
+import { DEFAULT_POIN_JASPEL, DEFAULT_MASA_KERJA_RULES } from '../lib/pointCalculator';
 
 export const DEFAULT_INSTANSI: InstansiConfig = {
   namaInstansi: 'UPTD Puskesmas Kalitengah',
@@ -681,6 +682,13 @@ export function buildInitialHistory(): JaspelHistoryRecord[] {
     calculation: calcAgustus,
     pejabat: DEFAULT_PEJABAT,
     savedAt: '2026-08-25T10:00:00.000Z',
+    isLocked: true,
+    lockedAt: '2026-08-25T11:30:00.000Z',
+    lockedBy: 'Bendahara Jaspel & Kasubag TU',
+    lockNote: 'Dokumen Kwitansi Global Agustus 2026 telah ditandatangani KPA & PPTK serta dicairkan resmi.',
+    employeesSnapshot: INITIAL_EMPLOYEES,
+    poinConfigSnapshot: DEFAULT_POIN_JASPEL,
+    masaKerjaRulesSnapshot: DEFAULT_MASA_KERJA_RULES,
   };
 
   // 2. Juli 2026
@@ -724,6 +732,13 @@ export function buildInitialHistory(): JaspelHistoryRecord[] {
     calculation: calcJuli,
     pejabat: { ...DEFAULT_PEJABAT, lunasTgl: '26/07/2026' },
     savedAt: '2026-07-26T11:15:00.000Z',
+    isLocked: true,
+    lockedAt: '2026-07-26T12:00:00.000Z',
+    lockedBy: 'Bendahara Jaspel & Kasubag TU',
+    lockNote: 'Arsip resmi Jaspel Juli 2026 - Lunas SPJ & Transfer Rekening.',
+    employeesSnapshot: INITIAL_EMPLOYEES,
+    poinConfigSnapshot: DEFAULT_POIN_JASPEL,
+    masaKerjaRulesSnapshot: DEFAULT_MASA_KERJA_RULES,
   };
 
   // 3. Juni 2026
@@ -767,6 +782,13 @@ export function buildInitialHistory(): JaspelHistoryRecord[] {
     calculation: calcJuni,
     pejabat: { ...DEFAULT_PEJABAT, lunasTgl: '25/06/2026' },
     savedAt: '2026-06-25T09:30:00.000Z',
+    isLocked: true,
+    lockedAt: '2026-06-25T10:00:00.000Z',
+    lockedBy: 'Bendahara Jaspel & Kasubag TU',
+    lockNote: 'Arsip resmi Jaspel Juni 2026 - Lunas SPJ & Transfer Rekening.',
+    employeesSnapshot: INITIAL_EMPLOYEES,
+    poinConfigSnapshot: DEFAULT_POIN_JASPEL,
+    masaKerjaRulesSnapshot: DEFAULT_MASA_KERJA_RULES,
   };
 
   return [agustusRecord, juliRecord, juniRecord];

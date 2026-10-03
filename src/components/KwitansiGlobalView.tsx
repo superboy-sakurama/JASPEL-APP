@@ -12,7 +12,9 @@ import {
   Building2, 
   Calendar,
   FileText,
-  UserCheck
+  UserCheck,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 
 interface KwitansiGlobalViewProps {
@@ -22,6 +24,8 @@ interface KwitansiGlobalViewProps {
   onUpdatePejabat: (newPejabat: KwitansiPejabat) => void;
   availablePeriods?: { bulan: string; tahun: number; label: string }[];
   onSelectPeriod?: (bulan: string, tahun: number) => void;
+  isPeriodLocked?: boolean;
+  selectedPeriodKey?: string;
 }
 
 export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
@@ -31,6 +35,8 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
   onUpdatePejabat,
   availablePeriods = [],
   onSelectPeriod,
+  isPeriodLocked = false,
+  selectedPeriodKey,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showConfig, setShowConfig] = useState(false);
@@ -83,9 +89,21 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
                 <FileText className="w-5 h-5" />
               </span>
               <div>
-                <h2 className="text-base font-bold text-slate-800">
-                  Kwitansi Global & Bukti Tanda Tangan Penerimaan Jaspel
-                </h2>
+                <div className="flex items-center space-x-2">
+                  <h2 className="text-base font-bold text-slate-800">
+                    Kwitansi Global & Bukti Tanda Tangan Penerimaan Jaspel
+                  </h2>
+                  {isPeriodLocked ? (
+                    <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <Lock className="w-2.5 h-2.5 text-emerald-700" />
+                      <span>Arsip Terkunci Resmi</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                      Periode Berjalan
+                    </span>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500">
                   Format resmi tanda tangan seluruh pegawai (KPA, PPTK, & Bendahara) sesuai standar belanja JKN Puskesmas
                 </p>
@@ -165,6 +183,21 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Locked security notice */}
+        {isPeriodLocked && (
+          <div className="p-3 bg-emerald-50/90 border border-emerald-200 rounded-xl flex items-center justify-between text-xs text-emerald-950">
+            <div className="flex items-center space-x-2.5">
+              <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+              <span className="text-[11px] leading-relaxed">
+                <strong>Arsip Terkunci Resmi:</strong> Dokumen kwitansi periode <strong>{setup.bulan} {setup.tahun}</strong> ini berstatus permanen. Perubahan pada master data pegawai atau bobot poin jaspel di menu saat ini tidak akan merubah nominal lembar ini.
+              </span>
+            </div>
+            <span className="text-[10px] font-mono font-bold bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded border border-emerald-300 shrink-0 hidden sm:inline-block">
+              IMMUTABLE SNAPSHOT
+            </span>
+          </div>
+        )}
 
         {/* Pejabat & Kop Configuration Modal/Form */}
         {showConfig && (

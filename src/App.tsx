@@ -102,10 +102,22 @@ export default function App() {
     };
   });
 
-  // 7. Riwayat Arsip Periode
+  // 7. Riwayat Arsip Periode (Dengan Sistem Penguncian Data Imutabel)
   const [historyRecords, setHistoryRecords] = useState<JaspelHistoryRecord[]>(() => {
     const saved = localStorage.getItem('jaspel_history');
-    return saved ? JSON.parse(saved) : buildInitialHistory();
+    if (saved) {
+      try {
+        const parsed: JaspelHistoryRecord[] = JSON.parse(saved);
+        // Pastikan field keamanan isLocked selalu terdefinisi (arsip lampau default terkunci resmi)
+        return parsed.map((item) => ({
+          ...item,
+          isLocked: item.isLocked !== undefined ? item.isLocked : true,
+        }));
+      } catch {
+        return buildInitialHistory();
+      }
+    }
+    return buildInitialHistory();
   });
 
   const [selectedKwitansiPeriod, setSelectedKwitansiPeriod] = useState<string>('CURRENT');
@@ -225,8 +237,21 @@ export default function App() {
     showToast('Seluruh poin pegawai berhasil dihitung ulang dan disinkronkan!', 'success');
   };
 
-  // Handler simpan periode berjalan ke riwayat arsip
-  const handleSaveCurrentToHistory = () => {
+  // Handler simpan periode berjalan ke riwayat arsip dengan proteksi penguncian
+  const handleSaveCurrentToHistory = (note?: string): boolean => {
+    // 1. Cek apakah periode ini sudah ada di riwayat dan berstatus TERKUNCI
+    const existing = historyRecords.find(
+      (r) => r.bulan === setup.bulan && r.tahun === setup.tahun
+    );
+
+    if (existing && existing.isLocked) {
+      showToast(
+        `Periode ${setup.bulan} ${setup.tahun} berstatus TERKUNCI RESMI! Buka kunci terlebih dahulu jika Anda benar-benar bermaksud merevisi arsip ini.`,
+        'error'
+      );
+      return false;
+    }
+
     const recordId = `${setup.tahun}-${String(new Date(setup.tanggalHitung || Date.now()).getMonth() + 1).padStart(2, '0')}`;
     const tax15 = calculation.employees
       .filter((e) => e.taxRate >= 0.15)
@@ -235,6 +260,7 @@ export default function App() {
       .filter((e) => e.taxRate < 0.15 && e.taxRate > 0)
       .reduce((s, e) => s + e.tax, 0);
 
+    // Deep clone snapshot data saat ini agar 100% kebal dari perubahan master data / poin di masa depan
     const newRecord: JaspelHistoryRecord = {
       id: recordId,
       bulan: setup.bulan,
@@ -252,9 +278,14 @@ export default function App() {
       totalFpk1: calculation.totalFpk1,
       totalFpk4: calculation.totalFpk4,
       totalNetto: calculation.totalNetto,
-      calculation: calculation,
-      pejabat: pejabat,
+      calculation: JSON.parse(JSON.stringify(calculation)),
+      pejabat: JSON.parse(JSON.stringify(pejabat)),
       savedAt: new Date().toISOString(),
+      isLocked: false, // Disimpan sebagai draft aktif, admin dapat menguncinya setelah final
+      lockNote: note || '',
+      employeesSnapshot: JSON.parse(JSON.stringify(employees)),
+      poinConfigSnapshot: JSON.parse(JSON.stringify(poinConfig)),
+      masaKerjaRulesSnapshot: JSON.parse(JSON.stringify(masaKerjaRules)),
     };
 
     setHistoryRecords((prev) => {
@@ -268,6 +299,61 @@ export default function App() {
       `Hasil Jaspel ${setup.bulan} ${setup.tahun} berhasil disimpan ke Riwayat!`,
       'success'
     );
+    return true;
+  };
+
+  // Handler Kunci / Buka Kunci Periode Riwayat
+  const handleToggleLockHistory = (id: string, lockNote?: string, officerName?: string) => {
+    const target = historyRecords.find((r) => r.id === id);
+    if (!target) return;
+
+    const willLock = !target.isLocked;
+    const nowIso = new Date().toISOString();
+
+    const updated = historyRecords.map((r) => {
+      if (r.id === id) {
+        return {
+          ...r,
+          isLocked: willLock,
+          lockedAt: willLock ? nowIso : undefined,
+          lockedBy: willLock ? (officerName || 'Bendahara Jaspel / Kasubag TU') : undefined,
+          lockNote: willLock 
+            ? (lockNote || r.lockNote || 'Data periode dikunci permanen.') 
+            : `Kunci dibuka untuk revisi pada ${new Date().toLocaleDateString('id-ID')}`,
+        };
+      }
+      return r;
+    });
+
+    setHistoryRecords(updated);
+    if (willLock) {
+      showToast(
+        `Periode ${target.bulan} ${target.tahun} BERHASIL DIKUNCI! Data kini kebal dari segala perubahan master pegawai & poin.`,
+        'success'
+      );
+    } else {
+      showToast(
+        `Kunci arsip periode ${target.bulan} ${target.tahun} dibuka (Status: Draft/Dapat Direvisi).`,
+        'info'
+      );
+    }
+  };
+
+  // Handler Hapus Riwayat dengan Proteksi Kunci
+  const handleDeleteHistoryRecordSafely = (id: string) => {
+    const target = historyRecords.find((r) => r.id === id);
+    if (!target) return;
+
+    if (target.isLocked) {
+      showToast(
+        `Gagal menghapus: Periode ${target.bulan} ${target.tahun} berstatus TERKUNCI RESMI dan dilindungi. Buka kunci terlebih dahulu jika benar-benar ingin menghapus.`,
+        'error'
+      );
+      return;
+    }
+
+    setHistoryRecords((prev) => prev.filter((r) => r.id !== id));
+    showToast(`Arsip Jaspel ${target.bulan} ${target.tahun} berhasil dihapus.`, 'info');
   };
 
   // Resolve data aktif untuk Kwitansi Global
@@ -584,10 +670,8 @@ export default function App() {
                 setSelectedKwitansiPeriod(`${record.bulan}-${record.tahun}`);
                 setActiveMenu('kwitansi');
               }}
-              onDeleteHistoryRecord={(id) => {
-                setHistoryRecords((prev) => prev.filter((r) => r.id !== id));
-                showToast('Riwayat periode dihapus.', 'info');
-              }}
+              onDeleteHistoryRecord={handleDeleteHistoryRecordSafely}
+              onToggleLockHistory={handleToggleLockHistory}
               onPushToGoogleSheets={handlePushResultsToSheets}
               isSyncingToSheets={isSyncing}
             />
@@ -650,6 +734,12 @@ export default function App() {
                 showToast('Data pejabat penandatangan kwitansi diperbarui!', 'success');
               }}
               availablePeriods={availablePeriods}
+              selectedPeriodKey={selectedKwitansiPeriod}
+              isPeriodLocked={
+                selectedKwitansiPeriod === 'CURRENT'
+                  ? Boolean(historyRecords.find(r => r.bulan === setup.bulan && r.tahun === setup.tahun)?.isLocked)
+                  : Boolean(historyRecords.find(r => `${r.bulan}-${r.tahun}` === selectedKwitansiPeriod)?.isLocked)
+              }
               onSelectPeriod={(b, t) => {
                 if (b === setup.bulan && t === setup.tahun) {
                   setSelectedKwitansiPeriod('CURRENT');
@@ -676,10 +766,8 @@ export default function App() {
                 setSelectedSlipEmployee(emp);
                 setActiveSlipSetup(periodSetup);
               }}
-              onDeleteHistoryRecord={(id) => {
-                setHistoryRecords((prev) => prev.filter((r) => r.id !== id));
-                showToast('Riwayat berhasil dihapus.', 'info');
-              }}
+              onDeleteHistoryRecord={handleDeleteHistoryRecordSafely}
+              onToggleLockHistory={handleToggleLockHistory}
             />
           )}
 
@@ -708,6 +796,11 @@ export default function App() {
           onRefreshStatus={fetchSheetsStatus}
           onInitTabs={handleInitSheetsTabs}
           isInitializingTabs={isInitializingTabs}
+          onPushEmployees={handlePushEmployeesToSheets}
+          onPushResults={handlePushResultsToSheets}
+          isSyncing={isSyncing}
+          employeeCount={employees.length}
+          activePeriod={`${setup.bulan} ${setup.tahun}`}
         />
 
         {/* App Footer */}
