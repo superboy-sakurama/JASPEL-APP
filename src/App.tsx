@@ -43,6 +43,18 @@ import { SlipGajiModal } from './components/SlipGajiModal';
 import { GoogleSheetsModal } from './components/GoogleSheetsModal';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
 
+export function ensureUniqueEmployeeIds(list: Employee[]): Employee[] {
+  const seenIds = new Set<string>();
+  return (list || []).map((emp, idx) => {
+    let id = emp.id && emp.id.trim() !== '' ? emp.id : `emp-${Date.now()}-${idx}`;
+    if (seenIds.has(id)) {
+      id = `${id}-${idx}-${Math.random().toString(36).substring(2, 6)}`;
+    }
+    seenIds.add(id);
+    return { ...emp, id };
+  });
+}
+
 export default function App() {
   const [activeMenu, setActiveMenu] = useState<AppMenuId>('balancing');
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -56,7 +68,14 @@ export default function App() {
   // 1b. Master Data Karyawan State
   const [employees, setEmployees] = useState<Employee[]>(() => {
     const saved = localStorage.getItem('jaspel_employees');
-    return saved ? JSON.parse(saved) : INITIAL_EMPLOYEES;
+    if (saved) {
+      try {
+        return ensureUniqueEmployeeIds(JSON.parse(saved));
+      } catch {
+        return ensureUniqueEmployeeIds(INITIAL_EMPLOYEES);
+      }
+    }
+    return ensureUniqueEmployeeIds(INITIAL_EMPLOYEES);
   });
 
   // 1c. Data Poin Jaspel Config State
@@ -452,7 +471,7 @@ export default function App() {
   };
 
   const handleBulkImportEmployees = (imported: Employee[]) => {
-    setEmployees(imported);
+    setEmployees(ensureUniqueEmployeeIds(imported));
     showToast(`Master data karyawan berhasil diperbarui (${imported.length} pegawai)!`, 'success');
   };
 

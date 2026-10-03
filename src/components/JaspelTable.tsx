@@ -270,7 +270,7 @@ export const JaspelTable: React.FC<JaspelTableProps> = ({
                 filteredEmployees.map((emp, index) => {
                   return (
                     <tr
-                      key={emp.id}
+                      key={`${emp.id || 'emp'}-${index}`}
                       className={`hover:bg-slate-50 transition-colors ${
                         emp.isBalancedBonus ? 'bg-emerald-50/20' : ''
                       }`}
