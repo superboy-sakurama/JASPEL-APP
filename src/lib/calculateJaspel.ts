@@ -60,8 +60,21 @@ export const calculateJaspel = (
     // Shadow Calculation (Tanpa Absensi) untuk dasar FPK 1% dan 4%
     const brutoShadow = ((emp.points || 0) / safeTotalBasePoints) * totalAlokasi;
 
-    // Pajak PPh 21: dibulatkan ke bawah (floor)
-    const tax = Math.floor(brutoRaw * (emp.taxRate || 0));
+    // Pajak PPh 21: PPh 21 dikenakan HANYA pada PNS Gol III (5%) dan Gol IV (15%). Gol II/d ke bawah (Gol II, Gol I), PPPK, dan Honorer tidak dikenakan PPh 21 (0%).
+    let effectiveTaxRate = 0;
+    if (emp.status === 'PNS') {
+      const gol = (emp.golongan || emp.jenisAsn || '').toUpperCase();
+      if (gol.includes('IV')) {
+        effectiveTaxRate = 0.15;
+      } else if (gol.includes('III')) {
+        effectiveTaxRate = 0.05;
+      } else {
+        effectiveTaxRate = 0;
+      }
+    } else {
+      effectiveTaxRate = 0;
+    }
+    const tax = Math.floor(brutoRaw * effectiveTaxRate);
 
     // FPK 1% & FPK 4%: Hanya untuk ASN (PNS & PPPK), Honorer = 0
     const isAsn = emp.status !== 'Honorer';

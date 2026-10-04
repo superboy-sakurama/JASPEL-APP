@@ -482,7 +482,7 @@ export const KwitansiGlobalView: React.FC<KwitansiGlobalViewProps> = ({
                 const tax5 = emp.taxRate < 0.15 && emp.taxRate > 0 ? emp.tax : 0;
 
                 return (
-                  <tr key={emp.id} className="hover:bg-slate-50 border-b border-slate-300">
+                  <tr key={`${emp.id || 'emp'}-${index}`} className="hover:bg-slate-50 border-b border-slate-300">
                     <td className="border border-slate-900 text-center py-1.5 px-1 font-mono">
                       {no}
                     </td>

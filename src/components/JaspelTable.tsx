@@ -244,30 +244,38 @@ export const JaspelTable: React.FC<JaspelTableProps> = ({
           <table className="w-full text-xs text-left">
             <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
               <tr>
-                <th className="py-3 px-3 w-10">No</th>
-                <th className="py-3 px-3 min-w-[200px]">Nama & Identitas</th>
-                <th className="py-3 px-3 text-center">Status</th>
-                <th className="py-3 px-3 text-center">Poin Dasar</th>
-                <th className="py-3 px-3 text-center">Kehadiran</th>
-                <th className="py-3 px-3 text-right">Poin Efektif</th>
-                <th className="py-3 px-3 text-right">Rasio (%)</th>
-                <th className="py-3 px-3 text-right">Bruto (Rp)</th>
-                <th className="py-3 px-3 text-right">PPh 21</th>
-                <th className="py-3 px-3 text-right">FPK 1%</th>
-                <th className="py-3 px-3 text-right">FPK 4%</th>
-                <th className="py-3 px-3 text-right font-bold text-slate-900">Netto Transfer</th>
-                <th className="py-3 px-3 text-center">Aksi</th>
+                <th rowSpan={2} className="py-3 px-3 w-10">No</th>
+                <th rowSpan={2} className="py-3 px-3 min-w-[200px]">Nama & Identitas</th>
+                <th rowSpan={2} className="py-3 px-3 text-center">Status</th>
+                <th rowSpan={2} className="py-3 px-3 text-center">Poin Dasar</th>
+                <th rowSpan={2} className="py-3 px-3 text-center">Kehadiran</th>
+                <th rowSpan={2} className="py-3 px-3 text-right">Poin Efektif</th>
+                <th rowSpan={2} className="py-3 px-3 text-right">Rasio (%)</th>
+                <th rowSpan={2} className="py-3 px-3 text-right">Bruto (Rp)</th>
+                <th colSpan={2} className="py-1 px-1 text-center border-l border-r border-slate-200">
+                  POTONGAN PPh Pasal 21
+                </th>
+                <th rowSpan={2} className="py-3 px-3 text-right">FPK 1%</th>
+                <th rowSpan={2} className="py-3 px-3 text-right">FPK 4%</th>
+                <th rowSpan={2} className="py-3 px-3 text-right font-bold text-slate-900">Netto Transfer</th>
+                <th rowSpan={2} className="py-3 px-3 text-center">Aksi</th>
+              </tr>
+              <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200 text-center">
+                <th className="py-1.5 px-2 text-right">15%</th>
+                <th className="py-1.5 px-2 text-right">5%</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200">
               {filteredEmployees.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="py-8 text-center text-slate-400">
+                  <td colSpan={14} className="py-8 text-center text-slate-400">
                     Tidak ada pegawai yang cocok dengan filter pencarian.
                   </td>
                 </tr>
               ) : (
                 filteredEmployees.map((emp, index) => {
+                  const tax15 = emp.taxRate >= 0.15 ? emp.tax : 0;
+                  const tax5 = emp.taxRate < 0.15 && emp.taxRate > 0 ? emp.tax : 0;
                   return (
                     <tr
                       key={`${emp.id || 'emp'}-${index}`}
@@ -281,7 +289,7 @@ export const JaspelTable: React.FC<JaspelTableProps> = ({
                         <div className="text-[11px] text-slate-500 font-mono">
                           NIP: {emp.nip || '-'}
                         </div>
-                        <div className="text-[10px] text-slate-500">{emp.jabatan}</div>
+                        <div className="text-[10px] text-slate-500">{emp.jabatan} {emp.golongan && emp.golongan !== '-' ? `• Gol. ${emp.golongan}` : ''}</div>
                       </td>
 
                       <td className="py-2.5 px-3 text-center">
@@ -321,13 +329,12 @@ export const JaspelTable: React.FC<JaspelTableProps> = ({
                         {formatRupiah(emp.brutoRaw)}
                       </td>
 
-                      <td className="py-2.5 px-3 text-right font-mono text-rose-700">
-                        {emp.tax > 0 ? `-${formatRupiah(emp.tax)}` : 'Rp 0'}
-                        {emp.taxRate > 0 && (
-                          <span className="block text-[9px] text-rose-500">
-                            ({(emp.taxRate * 100).toFixed(0)}%)
-                          </span>
-                        )}
+                      <td className="py-2.5 px-2 text-right font-mono text-slate-700">
+                        {tax15 > 0 ? `-${formatRupiah(tax15)}` : '-'}
+                      </td>
+
+                      <td className="py-2.5 px-2 text-right font-mono text-slate-700">
+                        {tax5 > 0 ? `-${formatRupiah(tax5)}` : '-'}
                       </td>
 
                       <td className="py-2.5 px-3 text-right font-mono text-amber-700">

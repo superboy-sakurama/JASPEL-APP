@@ -138,7 +138,7 @@ export const BalancingVisualizer: React.FC<BalancingVisualizerProps> = ({ calcul
                   const isBonus = emp.isBalancedBonus;
                   return (
                     <tr
-                      key={emp.id}
+                      key={`${emp.id || 'emp'}-${index}`}
                       className={isBonus ? 'bg-amber-50/60 font-medium' : 'bg-white hover:bg-slate-100/50'}
                     >
                       <td className="py-2 px-2 font-mono text-slate-500">#{index + 1}</td>

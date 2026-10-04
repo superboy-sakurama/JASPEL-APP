@@ -283,7 +283,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
       const row = calculatedRows[idx];
       return {
         ...emp,
-        points: row.exitPoin,
+        points: row.totalPoint,
         poinBpjs: row.totalPoinTanpaKehadiran,
         prosentaseMasaKerja: row.prosentaseMasaKerja,
       };
@@ -638,7 +638,7 @@ export const HitungPoinView: React.FC<HitungPoinViewProps> = ({
             {/* Table Body */}
             <tbody className="divide-y divide-slate-300">
               {filteredRows.map((r, idx) => (
-                <tr key={r.id} className="hover:bg-slate-50 transition-colors">
+                <tr key={`${r.id || 'row'}-${idx}`} className="hover:bg-slate-50 transition-colors">
                   {/* NO (Sticky) */}
                   <td className="border border-slate-300 text-center font-mono py-1.5 px-1 text-slate-500 sticky left-0 bg-white z-10">
                     {idx + 1}

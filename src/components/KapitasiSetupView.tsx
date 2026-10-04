@@ -379,7 +379,7 @@ export const KapitasiSetupView: React.FC<KapitasiSetupViewProps> = ({
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {historyRecords.map((hist, idx) => (
-                  <tr key={hist.id} className="hover:bg-slate-50/70 transition-colors">
+                  <tr key={`${hist.id || 'hist'}-${idx}`} className="hover:bg-slate-50/70 transition-colors">
                     <td className="px-4 py-3 text-center font-mono text-slate-400">{idx + 1}</td>
                     <td className="px-4 py-3 font-bold text-slate-900">
                       <div className="flex items-center space-x-1.5">

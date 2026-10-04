@@ -11,6 +11,7 @@ import {
   getHistoricalJaspelFromSheets,
   getSheetData,
   appendSheetData,
+  getMasterKaryawanFromSheets,
   SHEET_NAMES,
   SHEET_HEADERS
 } from './src/services/googleSheets';
@@ -96,6 +97,11 @@ async function startServer() {
       if (action === 'get-history') {
         const historyData = await getHistoricalJaspelFromSheets();
         return res.json({ success: true, data: historyData });
+      }
+
+      if (action === 'get-employees') {
+        const employees = await getMasterKaryawanFromSheets();
+        return res.json({ success: true, employees });
       }
 
       res.status(400).json({ error: 'Action parameter tidak dikenali' });

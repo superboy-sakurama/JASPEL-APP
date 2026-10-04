@@ -644,7 +644,11 @@ export const INITIAL_EMPLOYEES: Employee[] = [
     kinerjaUraian: 'Baik',
     kinerjaNilai: 97.5,
   },
-];
+].map(emp => {
+  const golongan = emp.jenisAsn ? (emp.jenisAsn.replace(/.*Gol\.\s*([^)]+).*/, '$1') || 'III/c') : 'III/c';
+  const taxRate = emp.status === 'PNS' ? (golongan.toUpperCase().includes('IV') ? 0.15 : golongan.toUpperCase().includes('III') ? 0.05 : 0) : 0;
+  return { ...emp, golongan, taxRate } as Employee;
+});
 
 // Generate realistic initial historical records for previous months
 export function buildInitialHistory(): JaspelHistoryRecord[] {

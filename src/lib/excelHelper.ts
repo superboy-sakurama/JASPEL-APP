@@ -52,6 +52,7 @@ export function downloadMasterPegawaiTemplate() {
     'Nama Pegawai',
     'NIP / NIK',
     'Status Kepegawaian (PNS/PPPK/Honorer)',
+    'Golongan / Ruang (e.g. IV/a, III/d, II/c)',
     'TMT Masa Kerja (YYYY-MM-DD)',
     'Pendidikan (SD/SMP/SMA/D3/D4/S1/Profesi)',
     'Jabatan',
@@ -71,6 +72,7 @@ export function downloadMasterPegawaiTemplate() {
       'drg. Indah Mardiyah Hayati, M.H.',
       '19750411 200312 2 004',
       'PNS',
+      'IV/a',
       '2003-12-01',
       'Profesi',
       'Dokter Gigi',
@@ -88,6 +90,7 @@ export function downloadMasterPegawaiTemplate() {
       'Dr. R. Muhammad Ustadho',
       '19820506 201412 1 001',
       'PNS',
+      'IV/a',
       '2014-12-01',
       'S1',
       'Dokter',
@@ -105,6 +108,7 @@ export function downloadMasterPegawaiTemplate() {
       'Ninik Purwati, S.Kep.Ners',
       '19661203 198712 2 001',
       'PNS',
+      'IV/a',
       '1987-12-01',
       'Profesi',
       'Ners / S.St Bd',
@@ -122,6 +126,7 @@ export function downloadMasterPegawaiTemplate() {
       'Wuryanti, S.ST, Bd',
       '19720824 200604 2 013',
       'PNS',
+      'III/d',
       '2006-04-01',
       'D4/S1',
       'Bidan',
@@ -139,6 +144,7 @@ export function downloadMasterPegawaiTemplate() {
       'Ahmad Syarifuddin, S.Kep',
       '19920315 202203 1 004',
       'PPPK',
+      '-',
       '2022-03-01',
       'D4/S1',
       'Perawat',
@@ -156,6 +162,7 @@ export function downloadMasterPegawaiTemplate() {
       'Siti Nurhaliza, A.Md.Keb',
       '3524106509980002',
       'Honorer',
+      '-',
       '2024-02-01',
       'D3',
       'Bidan',
@@ -170,7 +177,7 @@ export function downloadMasterPegawaiTemplate() {
     ]
   ];
 
-  const colWidths = [6, 32, 24, 25, 18, 16, 22, 20, 24, 24, 20, 20, 20, 20, 16];
+  const colWidths = [6, 32, 24, 25, 18, 18, 16, 22, 20, 24, 24, 20, 20, 20, 20, 16];
   downloadExcel(
     'Format_Import_Master_Karyawan_Jaspel.xlsx',
     'Master_Karyawan',

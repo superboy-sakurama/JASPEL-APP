@@ -58,11 +58,11 @@ export const PfkBpjsView: React.FC<PfkBpjsViewProps> = ({
   let pppkIuran4 = 0;
 
   pfkEmployees.forEach((emp) => {
-    const jasaMedis = emp.brutoShadow !== undefined ? emp.brutoShadow : (emp.brutoRaw || 0);
-    const thp = emp.netto !== undefined ? emp.netto : (emp.brutoRaw || 0);
+    const jasaMedis = emp.pfkBpjs || 0;
+    const thp = 0;
     const dpi = jasaMedis;
-    const i1 = emp.fpk1 > 0 ? emp.fpk1 : Math.floor(dpi * 0.01);
-    const i4 = emp.fpk4 > 0 ? emp.fpk4 : Math.floor(dpi * 0.04);
+    const i1 = Math.floor(dpi * 0.01);
+    const i4 = Math.floor(dpi * 0.04);
     const i5 = i1 + i4;
 
     sumJasa += jasaMedis;
@@ -227,11 +227,11 @@ export const PfkBpjsView: React.FC<PfkBpjsViewProps> = ({
                 </tr>
               ) : (
                 filteredEmployees.map((emp, idx) => {
-                  const jasaMedis = emp.brutoShadow !== undefined ? emp.brutoShadow : (emp.brutoRaw || 0);
-                  const thp = emp.netto !== undefined ? emp.netto : (emp.brutoRaw || 0);
+                  const jasaMedis = emp.pfkBpjs || 0;
+                  const thp = 0;
                   const dpi = jasaMedis;
-                  const i1 = emp.fpk1 > 0 ? emp.fpk1 : Math.floor(dpi * 0.01);
-                  const i4 = emp.fpk4 > 0 ? emp.fpk4 : Math.floor(dpi * 0.04);
+                  const i1 = Math.floor(dpi * 0.01);
+                  const i4 = Math.floor(dpi * 0.04);
                   const i5 = i1 + i4;
 
                   return (
@@ -247,7 +247,7 @@ export const PfkBpjsView: React.FC<PfkBpjsViewProps> = ({
                         </span>
                       </td>
                       <td className="border border-slate-300 px-3 py-1.5 text-right font-mono">{formatNumber(jasaMedis, 2)}</td>
-                      <td className="border border-slate-300 px-3 py-1.5 text-right font-mono">{formatNumber(thp, 2)}</td>
+                      <td className="border border-slate-300 px-3 py-1.5 text-right font-mono text-slate-400">-</td>
                       <td className="border border-slate-300 px-3 py-1.5 text-right font-mono">{formatNumber(dpi, 2)}</td>
                       <td className="border border-slate-300 px-3 py-1.5 text-right font-mono bg-amber-50/40 text-amber-900">{formatNumber(i1, 2)}</td>
                       <td className="border border-slate-300 px-3 py-1.5 text-right font-mono bg-amber-50/40 text-amber-900">{formatNumber(i4, 2)}</td>

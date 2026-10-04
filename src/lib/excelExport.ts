@@ -242,11 +242,11 @@ export function exportPfkBpjsToExcel(
   let sumIuran5 = 0;
 
   employees.forEach((emp, idx) => {
-    const jasaMedis = emp.brutoShadow !== undefined ? emp.brutoShadow : (emp.brutoRaw || 0);
-    const thp = emp.netto !== undefined ? emp.netto : (emp.brutoRaw || 0);
+    const jasaMedis = emp.pfkBpjs || 0;
+    const thp = 0;
     const dpi = jasaMedis;
-    const i1 = emp.fpk1 > 0 ? emp.fpk1 : Math.floor(dpi * 0.01);
-    const i4 = emp.fpk4 > 0 ? emp.fpk4 : Math.floor(dpi * 0.04);
+    const i1 = Math.floor(dpi * 0.01);
+    const i4 = Math.floor(dpi * 0.04);
     const i5 = i1 + i4;
 
     sumJasa += jasaMedis;
@@ -262,7 +262,7 @@ export function exportPfkBpjsToExcel(
       emp.nip ? `'${emp.nip}` : '-',
       emp.status,
       jasaMedis,
-      thp,
+      '',
       dpi,
       i1,
       i4,

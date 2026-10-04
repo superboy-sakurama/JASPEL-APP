@@ -42,6 +42,7 @@ export interface Employee {
   kinerjaNilai?: number; // e.g. 97.5
 
   npwp?: string;
+  golongan?: string; // e.g. "IV/a", "III/d", etc.
   points: number; // Poin SK / Permenkes (atau hasil hitung otomatis)
   poinBpjs?: number; // Poin tanpa kehadiran (untuk PFK BPJS)
   prosentaseMasaKerja?: number; // % masa kerja terhitung (Honorer)
@@ -73,6 +74,7 @@ export interface CalculatedEmployee extends Employee {
   gapBonus: number; // +1 jika menerima distribusi pembulatan Largest Remainder
   netto: number; // Netto final setelah penyeimbangan selisih desimal
   isBalancedBonus: boolean;
+  pfkBpjs?: number;
 }
 
 export interface CalculationResult {

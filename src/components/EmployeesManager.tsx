@@ -6,8 +6,10 @@ import {
   getAllAvailableTugas, 
   getAllAvailableTugasTambahan, 
   DEFAULT_POIN_JASPEL, 
+  DEFAULT_MASA_KERJA_RULES,
   resolveProgramPoints,
-  getPoinTugasTambahan
+  getPoinTugasTambahan,
+  evaluateHitungPoinRow
 } from '../lib/pointCalculator';
 import { 
   UserPlus, 
@@ -34,6 +36,8 @@ interface EmployeesManagerProps {
   onBulkImportEmployees?: (imported: Employee[]) => void;
   onPushToGoogleSheets?: () => Promise<void>;
   isSyncingToSheets?: boolean;
+  onSyncFromGoogleSheets?: () => Promise<void>;
+  isSyncingFromSheets?: boolean;
 }
 
 const PENDIDIKAN_OPTIONS = ['SD', 'SMP', 'SMA', 'D3', 'D4/S1', 'Profesi'];
@@ -48,6 +52,8 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
   onBulkImportEmployees,
   onPushToGoogleSheets,
   isSyncingToSheets = false,
+  onSyncFromGoogleSheets,
+  isSyncingFromSheets = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | EmployeeStatus>('ALL');
@@ -77,6 +83,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
     nip: '',
     tmt: '2020-01-01',
     status: 'PNS',
+    golongan: 'III/c',
     pendidikan: 'D4/S1',
     jabatan: 'Perawat',
     tugasAdmin: '-',
@@ -103,6 +110,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
       nip: '',
       tmt: new Date().toISOString().split('T')[0],
       status: 'PNS',
+      golongan: 'III/c',
       pendidikan: 'D4/S1',
       jabatan: 'Staf Medis / Paramedis',
       tugasAdmin: '-',
@@ -128,6 +136,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
     setEditingEmployee(emp);
     setFormData({ 
       ...emp,
+      golongan: emp.golongan || (emp.jenisAsn ? emp.jenisAsn.replace(/.*Gol\.\s*([^)]+).*/, '$1') : 'III/c'),
       tugasTambahan: emp.tugasTambahan || '-',
     });
     setIsModalOpen(true);
@@ -136,42 +145,46 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const status = (formData.status as EmployeeStatus) || 'PNS';
+    const golongan = formData.golongan || 'III/c';
+    const taxRate = status === 'PNS' 
+      ? (golongan.toUpperCase().includes('IV') ? 0.15 : golongan.toUpperCase().includes('III') ? 0.05 : 0) 
+      : 0;
+
+    const baseEmp: Employee = {
+      id: editingEmployee ? editingEmployee.id : `emp-${Date.now()}`,
+      name: formData.name || 'Pegawai Baru',
+      nip: formData.nip || '-',
+      tmt: formData.tmt || '2020-01-01',
+      status,
+      golongan,
+      pendidikan: formData.pendidikan || 'D4/S1',
+      jabatan: formData.jabatan || 'Staf',
+      tugasAdmin: formData.tugasAdmin || '-',
+      tugasTambahan: formData.tugasTambahan || '-',
+      pjProgramName: formData.pjProgramName || '',
+      program1: formData.program1 || '',
+      program2: formData.program2 || '',
+      program3: formData.program3 || '',
+      program4: formData.program4 || '',
+      program5: formData.program5 || '',
+      npwp: formData.npwp || '',
+      points: 0,
+      attendance: editingEmployee ? Number(editingEmployee.attendance ?? 0) : 0,
+      maxAttendance: editingEmployee ? Number(editingEmployee.maxAttendance || 24) : 24,
+      taxRate,
+      kinerjaUraian: formData.kinerjaUraian || 'Baik',
+      kinerjaNilai: formData.kinerjaNilai || 97.5,
+      ...formData,
+    } as Employee;
+
+    const evalRow = evaluateHitungPoinRow(baseEmp, 0, poinConfig || DEFAULT_POIN_JASPEL, DEFAULT_MASA_KERJA_RULES, 0, 1, 1, undefined, employees);
+    baseEmp.points = evalRow.totalPoint;
+
     if (editingEmployee) {
-      onUpdateEmployee({
-        ...editingEmployee,
-        ...formData,
-        tugasTambahan: formData.tugasTambahan || '-',
-        points: Number(formData.points) || 10,
-        attendance: Number(editingEmployee.attendance ?? 0),
-        maxAttendance: Number(editingEmployee.maxAttendance || 24),
-        taxRate: Number(formData.taxRate) || (formData.status === 'Honorer' ? 0 : 0.05),
-      } as Employee);
+      onUpdateEmployee(baseEmp);
     } else {
-      const newEmp: Employee = {
-        id: `emp-${Date.now()}`,
-        name: formData.name || 'Pegawai Baru',
-        nip: formData.nip || '-',
-        tmt: formData.tmt || '2020-01-01',
-        status: (formData.status as EmployeeStatus) || 'PNS',
-        pendidikan: formData.pendidikan || 'D4/S1',
-        jabatan: formData.jabatan || 'Staf',
-        tugasAdmin: formData.tugasAdmin || '-',
-        tugasTambahan: formData.tugasTambahan || '-',
-        pjProgramName: formData.pjProgramName || '',
-        program1: formData.program1 || '',
-        program2: formData.program2 || '',
-        program3: formData.program3 || '',
-        program4: formData.program4 || '',
-        program5: formData.program5 || '',
-        npwp: formData.npwp || '',
-        points: Number(formData.points) || 50,
-        attendance: 0,
-        maxAttendance: 24,
-        taxRate: Number(formData.taxRate) || (formData.status === 'Honorer' ? 0 : 0.05),
-        kinerjaUraian: formData.kinerjaUraian || 'Baik',
-        kinerjaNilai: formData.kinerjaNilai || 97.5,
-      };
-      onAddEmployee(newEmp);
+      onAddEmployee(baseEmp);
     }
 
     setIsModalOpen(false);
@@ -197,6 +210,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
       const nameIdx = findIdx(['nama']);
       const nipIdx = findIdx(['nip', 'nik']);
       const statusIdx = findIdx(['status']);
+      const golonganIdx = findIdx(['golongan', 'ruang', 'pangkat']);
       const tmtIdx = findIdx(['tmt', 'mulai']);
       const pendIdx = findIdx(['pendidikan']);
       const jabIdx = findIdx(['jabatan', 'profesi']);
@@ -260,18 +274,20 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
           ? Number(row[maxHadirIdx]) 
           : (existingEmp?.maxAttendance || 24);
 
-        const taxRate = statusStr === 'Honorer' ? 0 : 0.05;
+        const golongan = golonganIdx !== -1 && row[golonganIdx] ? String(row[golonganIdx]).trim() : (existingEmp?.golongan || 'III/c');
+        const taxRate = statusStr === 'PNS' ? (golongan.toUpperCase().includes('IV') ? 0.15 : golongan.toUpperCase().includes('III') ? 0.05 : 0) : 0;
 
         let empId = existingEmp ? existingEmp.id : `emp-imp-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
         if (importedEmployees.some(e => e.id === empId)) {
           empId = `emp-imp-${Date.now()}-${i}-${Math.random().toString(36).substring(2, 6)}`;
         }
 
-        importedEmployees.push({
+        const tempImpEmp: Employee = {
           id: empId,
           name,
           nip,
           status: statusStr,
+          golongan,
           tmt: tmtStr,
           pendidikan: pend,
           jabatan: jab,
@@ -282,13 +298,17 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
           program3: p3,
           program4: p4,
           program5: p5,
-          points: isNaN(points) ? (existingEmp?.points ?? 50) : points,
+          points: 0,
           attendance: isNaN(attendance) ? 0 : attendance,
           maxAttendance: isNaN(maxAttendance) ? 24 : maxAttendance,
           taxRate,
           kinerjaUraian: existingEmp?.kinerjaUraian || 'Baik',
           kinerjaNilai: existingEmp?.kinerjaNilai || 97.5,
-        });
+        };
+        const evalImpRow = evaluateHitungPoinRow(tempImpEmp, 0, poinConfig || DEFAULT_POIN_JASPEL, DEFAULT_MASA_KERJA_RULES, 0, 1, 1, undefined, employees);
+        tempImpEmp.points = evalImpRow.totalPoint;
+
+        importedEmployees.push(tempImpEmp);
       }
 
       if (importedEmployees.length === 0) {
@@ -416,6 +436,19 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
             </button>
           )}
 
+          {/* Sync dari Google Sheets */}
+          {onSyncFromGoogleSheets && (
+            <button
+              onClick={onSyncFromGoogleSheets}
+              disabled={isSyncingFromSheets}
+              className="inline-flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-emerald-700 hover:bg-emerald-600 text-white transition-colors disabled:opacity-50"
+              title="Tarik data pegawai langsung dari database spreadsheet Google Sheets"
+            >
+              <Database className="w-3.5 h-3.5" />
+              <span>{isSyncingFromSheets ? 'Menyinkronkan...' : 'Sinkron dari Sheets'}</span>
+            </button>
+          )}
+
           {/* Tambah Karyawan */}
           <button
             onClick={handleOpenAdd}
@@ -485,6 +518,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                 <th className="px-4 py-3 w-10 text-center">No</th>
                 <th className="px-4 py-3">Nama Pegawai & NIP/NIK</th>
                 <th className="px-4 py-3 text-center">Status</th>
+                <th className="px-4 py-3 text-center">Gol. / Pajak PPh 21</th>
                 <th className="px-4 py-3 text-center">TMT</th>
                 <th className="px-4 py-3 text-center">Pendidikan</th>
                 <th className="px-4 py-3">Jabatan & Tugas Admin</th>
@@ -523,6 +557,16 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                       >
                         {emp.status === 'Honorer' ? 'NON ASN' : emp.status}
                       </span>
+                    </td>
+                    <td className="px-4 py-3 text-center font-mono">
+                      <div className="text-slate-800 font-semibold">{emp.golongan || '-'}</div>
+                      <div className={`text-[10px] font-bold mt-0.5 inline-block px-1.5 py-0.2 rounded ${
+                        emp.taxRate >= 0.15 ? 'text-purple-700 bg-purple-50' :
+                        emp.taxRate > 0 ? 'text-blue-700 bg-blue-50' :
+                        'text-slate-500 bg-slate-100'
+                      }`}>
+                        PPh 21: {(emp.taxRate * 100).toFixed(0)}%
+                      </div>
                     </td>
                     <td className="px-4 py-3 text-center font-mono text-slate-600 whitespace-nowrap">
                       {emp.tmt || '-'}
@@ -655,7 +699,14 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                   </label>
                   <select
                     value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as EmployeeStatus })}
+                    onChange={(e) => {
+                      const newStatus = e.target.value as EmployeeStatus;
+                      const newGol = newStatus !== 'PNS' ? '-' : (formData.golongan === '-' ? 'III/c' : formData.golongan || 'III/c');
+                      const newTax = newStatus === 'PNS'
+                        ? (newGol.toUpperCase().includes('IV') ? 0.15 : newGol.toUpperCase().includes('III') ? 0.05 : 0)
+                        : 0;
+                      setFormData({ ...formData, status: newStatus, golongan: newGol, taxRate: newTax });
+                    }}
                     className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 bg-white"
                   >
                     {STATUS_OPTIONS.map((st) => (
@@ -664,6 +715,53 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                       </option>
                     ))}
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Golongan / Ruang <span className="text-rose-500">*</span>
+                  </label>
+                  <select
+                    value={formData.golongan || '-'}
+                    onChange={(e) => {
+                      const newGol = e.target.value;
+                      const newTax = formData.status === 'PNS'
+                        ? (newGol.toUpperCase().includes('IV') ? 0.15 : newGol.toUpperCase().includes('III') ? 0.05 : 0)
+                        : 0;
+                      setFormData({ ...formData, golongan: newGol, taxRate: newTax });
+                    }}
+                    className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono bg-white"
+                  >
+                    <option value="-">- (Non ASN / PPPK / Tanpa Golongan)</option>
+                    <optgroup label="Golongan IV (Tarif PPh 21: 15%)">
+                      <option value="IV/e">IV/e - Pembina Utama</option>
+                      <option value="IV/d">IV/d - Pembina Utama Madya</option>
+                      <option value="IV/c">IV/c - Pembina Utama Muda</option>
+                      <option value="IV/b">IV/b - Pembina Tingkat I</option>
+                      <option value="IV/a">IV/a - Pembina</option>
+                    </optgroup>
+                    <optgroup label="Golongan III (Tarif PPh 21: 5%)">
+                      <option value="III/d">III/d - Penata Tingkat I</option>
+                      <option value="III/c">III/c - Penata</option>
+                      <option value="III/b">III/b - Penata Muda Tingkat I</option>
+                      <option value="III/a">III/a - Penata Muda</option>
+                    </optgroup>
+                    <optgroup label="Golongan II (Bebas PPh 21: 0%)">
+                      <option value="II/d">II/d - Pengatur Tingkat I</option>
+                      <option value="II/c">II/c - Pengatur</option>
+                      <option value="II/b">II/b - Pengatur Muda Tingkat I</option>
+                      <option value="II/a">II/a - Pengatur Muda</option>
+                    </optgroup>
+                    <optgroup label="Golongan I (Bebas PPh 21: 0%)">
+                      <option value="I/d">I/d - Juru Tingkat I</option>
+                      <option value="I/c">I/c - Juru</option>
+                      <option value="I/b">I/b - Juru Muda Tingkat I</option>
+                      <option value="I/a">I/a - Juru Muda</option>
+                    </optgroup>
+                  </select>
+                  <p className="text-[10px] text-slate-500 mt-0.5">
+                    PNS Gol. IV: PPh 21 15% | PNS Gol. III: PPh 21 5% | Gol. II/I & Non ASN: 0%
+                  </p>
                 </div>
 
                 <div>

@@ -206,8 +206,27 @@ export default function App() {
 
   // Kalkulasi reaktif Jaspel menggunakan Largest Remainder Method (Hare-Niemeyer)
   const calculation = useMemo(() => {
-    return calculateJaspel(employees, setup.totalAlokasi);
-  }, [employees, setup.totalAlokasi]);
+    const res = calculateJaspel(employees, setup.totalAlokasi);
+    const preliminaryRows = employees.map((emp, idx) =>
+      evaluateHitungPoinRow(emp, idx, poinConfig, masaKerjaRules, setup.totalAlokasi, 1, 1)
+    );
+    const totalExitPoin = preliminaryRows.reduce((sum, r) => sum + r.exitPoin, 0) || 1;
+    const totalBasePoin = preliminaryRows.reduce((sum, r) => sum + r.totalPoinTanpaKehadiran, 0) || 1;
+
+    const enrichedEmployees = res.employees.map((emp, idx) => {
+      const r = evaluateHitungPoinRow(emp, idx, poinConfig, masaKerjaRules, setup.totalAlokasi, totalExitPoin, totalBasePoin);
+      return {
+        ...emp,
+        pfkBpjs: r.pfkBpjs,
+      };
+    });
+
+    return {
+      ...res,
+      employees: enrichedEmployees,
+      totalBasePoints: totalBasePoin,
+    };
+  }, [employees, setup.totalAlokasi, poinConfig, masaKerjaRules]);
 
   // Update Instansi and propagate to Pejabat
   const handleUpdateInstansi = (newInst: InstansiConfig) => {
@@ -543,6 +562,27 @@ export default function App() {
     }
   };
 
+  const [isSyncingFromSheets, setIsSyncingFromSheets] = useState(false);
+
+  // Sync Master Pegawai dari Google Sheets
+  const handleSyncEmployeesFromSheets = async () => {
+    setIsSyncingFromSheets(true);
+    try {
+      const res = await fetch('/api/sheets?action=get-employees');
+      const data = await res.json();
+      if (data.success && data.employees && data.employees.length > 0) {
+        setEmployees(data.employees);
+        showToast(`Berhasil menyinkronkan ${data.employees.length} pegawai langsung dari Google Sheets!`, 'success');
+      } else {
+        showToast(data.error || 'Tidak ada data pegawai ditemukan di spreadsheet Master_Karyawan.', 'error');
+      }
+    } catch (err: any) {
+      showToast(`Koneksi gagal: ${err.message}`, 'error');
+    } finally {
+      setIsSyncingFromSheets(false);
+    }
+  };
+
   // Inisialisasi otomatis tab Google Sheets
   const handleInitSheetsTabs = async () => {
     setIsInitializingTabs(true);
@@ -642,6 +682,8 @@ export default function App() {
               onBulkImportEmployees={handleBulkImportEmployees}
               onPushToGoogleSheets={handlePushEmployeesToSheets}
               isSyncingToSheets={isSyncing}
+              onSyncFromGoogleSheets={handleSyncEmployeesFromSheets}
+              isSyncingFromSheets={isSyncingFromSheets}
             />
           )}
 
