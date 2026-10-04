@@ -225,17 +225,17 @@ export function getPoinIjazah(emp: Employee, config: PoinJaspelConfig): number {
   const p = (emp.pendidikan || '').toLowerCase();
   const j = (emp.jabatan || '').toLowerCase();
 
-  if (j.includes('dokter gigi')) return config.ijazahDokterGigi;
+  if (j.includes('dokter gigi') || p.includes('dokter gigi')) return config.ijazahDokterGigi;
   if (j.includes('dokter') || p.includes('dokter')) return config.ijazahDokter;
-  if (j.includes('ners') || p.includes('ners') || p.includes('s.st') || p.includes('sst') || (j.includes('bidan') && (p.includes('d4') || p.includes('s1')))) {
+  if (j.includes('ners') || p.includes('ners') || p.includes('s.st') || p.includes('sst') || p.includes('bidan') || j.includes('ners') || j.includes('s.st') || j.includes('sst') || j.includes('bidan') || p.includes('bidan')) {
     return config.ijazahNersSstBd;
   }
-  if (j.includes('apoteker') && !j.includes('asisten')) return config.ijazahApoteker;
-  if ((p.includes('s1') || p.includes('d4')) && (j.includes('kes') || j.includes('perawat') || j.includes('bidan') || j.includes('gizi') || j.includes('sanitasi'))) {
+  if (j.includes('apoteker') || p.includes('apoteker')) return config.ijazahApoteker;
+  if ((p.includes('s1') || p.includes('d4') || p.includes('kesehatan')) && !p.includes('d3')) {
     return config.ijazahS1KesDiv;
   }
   if (p.includes('s1') || p.includes('d4')) return config.ijazahS1NonKes;
-  if (p.includes('d3') && (j.includes('kes') || j.includes('bidan') || j.includes('perawat') || j.includes('farmasi') || j.includes('lab'))) {
+  if (p.includes('d3') && (j.includes('kes') || j.includes('bidan') || j.includes('perawat') || j.includes('farmasi') || j.includes('lab') || p.includes('kesehatan') || p.includes('kebidanan') || p.includes('keperawatan'))) {
     return config.ijazahD3Kes;
   }
   if (p.includes('d3')) return config.ijazahD3NonKes;

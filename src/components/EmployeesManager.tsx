@@ -40,7 +40,23 @@ interface EmployeesManagerProps {
   isSyncingFromSheets?: boolean;
 }
 
-const PENDIDIKAN_OPTIONS = ['SD', 'SMP', 'SMA', 'D3', 'D4/S1', 'Profesi'];
+const PENDIDIKAN_OPTIONS = [
+  'Dokter',
+  'Dokter Gigi',
+  'Ners',
+  'S.St / Bidan',
+  'Apoteker',
+  'S1 / D4 Kesehatan',
+  'S1 / D4 Non Kesehatan',
+  'D3 Kesehatan',
+  'D3 Kebidanan',
+  'D3 Keperawatan',
+  'D3 Non Kesehatan',
+  'Asisten Kesehatan',
+  'SMA / D1 / D2',
+  'SMP',
+  'SD',
+];
 const STATUS_OPTIONS: EmployeeStatus[] = ['PNS', 'PPPK', 'Honorer'];
 
 export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
@@ -103,8 +119,57 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
     kinerjaNilai: 97.5,
   });
 
+  const [isAutoPoints, setIsAutoPoints] = useState(true);
+
+  // Auto calculate points when criteria items change
+  React.useEffect(() => {
+    if (!isAutoPoints) return;
+    const dummyEmp: Employee = {
+      id: editingEmployee ? editingEmployee.id : 'temp',
+      name: formData.name || '',
+      nip: formData.nip || '',
+      status: (formData.status as EmployeeStatus) || 'PNS',
+      golongan: formData.golongan || 'III/c',
+      tmt: formData.tmt || '2020-01-01',
+      pendidikan: formData.pendidikan || 'D4/S1',
+      jabatan: formData.jabatan || 'Staf',
+      tugasAdmin: formData.tugasAdmin || '-',
+      tugasTambahan: formData.tugasTambahan || '-',
+      pjProgramName: formData.pjProgramName || '',
+      program1: formData.program1 || '',
+      program2: formData.program2 || '',
+      program3: formData.program3 || '',
+      program4: formData.program4 || '',
+      program5: formData.program5 || '',
+      points: 0,
+      attendance: 22,
+      maxAttendance: 24,
+      taxRate: 0.05,
+      ...formData,
+    } as Employee;
+    const evalRow = evaluateHitungPoinRow(dummyEmp, 0, poinConfig || DEFAULT_POIN_JASPEL, DEFAULT_MASA_KERJA_RULES, 0, 1, 1, undefined, employees);
+    setFormData(prev => ({ ...prev, points: evalRow.totalPoint }));
+  }, [
+    formData.status,
+    formData.golongan,
+    formData.tmt,
+    formData.pendidikan,
+    formData.jabatan,
+    formData.tugasAdmin,
+    formData.tugasTambahan,
+    formData.pjProgramName,
+    formData.pjProgramPoin,
+    formData.program1,
+    formData.program2,
+    formData.program3,
+    formData.program4,
+    formData.program5,
+    isAutoPoints
+  ]);
+
   const handleOpenAdd = () => {
     setEditingEmployee(null);
+    setIsAutoPoints(true);
     setFormData({
       name: '',
       nip: '',
@@ -134,6 +199,7 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
 
   const handleOpenEdit = (emp: Employee) => {
     setEditingEmployee(emp);
+    setIsAutoPoints(true);
     setFormData({ 
       ...emp,
       golongan: emp.golongan || (emp.jenisAsn ? emp.jenisAsn.replace(/.*Gol\.\s*([^)]+).*/, '$1') : 'III/c'),
@@ -853,15 +919,32 @@ export const EmployeesManager: React.FC<EmployeesManagerProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Jumlah Poin Dasar (Auto / Manual)
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-semibold text-slate-700">
+                      Jumlah Poin Dasar (Auto / Manual)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsAutoPoints(true);
+                        const dummyEmp: Employee = { ...formData, points: 0 } as Employee;
+                        const evalRow = evaluateHitungPoinRow(dummyEmp, 0, poinConfig || DEFAULT_POIN_JASPEL, DEFAULT_MASA_KERJA_RULES, 0, 1, 1, undefined, employees);
+                        setFormData(prev => ({ ...prev, points: evalRow.totalPoint }));
+                      }}
+                      className="text-[10px] text-teal-700 hover:text-teal-900 font-semibold underline"
+                    >
+                      {isAutoPoints ? '✨ Mode Auto Aktif' : '🔄 Set ke Auto'}
+                    </button>
+                  </div>
                   <input
                     type="number"
                     step="0.5"
                     min="0"
                     value={formData.points ?? 50}
-                    onChange={(e) => setFormData({ ...formData, points: Number(e.target.value) })}
+                    onChange={(e) => {
+                      setIsAutoPoints(false);
+                      setFormData({ ...formData, points: Number(e.target.value) });
+                    }}
                     className="w-full text-xs px-3 py-2 rounded-lg border border-slate-300 font-mono font-bold bg-white"
                   />
                 </div>
